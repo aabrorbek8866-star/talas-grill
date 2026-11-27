@@ -1676,10 +1676,11 @@ VIEWS.sozlama = {
     <form class="card c6 stripe-bad" id="z-wipe"><h2>${E("Ma'lumotlarni tozalash")}</h2>
       <p class="small muted" style="margin:0">${E("Barcha sotuvlar, buyurtmalar, tandir, ombor, kirim-chiqim, xabarlar va hisobotlar o'chadi, ombor va o'tin soni 0 bo'ladi. Loginlar, narxlar va sozlamalar qoladi. Oshpazning shaxsiy balansi o'chmaydi. Buni qaytarib bo'lmaydi.")}</p>
       <div class="field"><label class="label" for="z-wq">${E("Tasdiqlash uchun TOZALASH deb yozing")}</label><input id="z-wq" autocomplete="off"></div>
-      <div class="err" id="z-we"></div><button class="btn" style="background:var(--bad);color:#fff;border-color:var(--bad)">${E("Hammasini tozalash")}</button></form>
+      <div class="err" id="z-we"></div><div class="row"><button class="btn" style="background:var(--bad);color:#fff;border-color:var(--bad)">${E("Hammasini tozalash")}</button>${DEMO ? `<button class="btn" type="button" id="z-demo">${E("Demo ma'lumotlarini qayta tiklash")}</button>` : ""}</div></form>
     <div class="card c6"><h2>${E("Ma'lumot")}</h2><p class="small muted" style="margin:0">${E("Barcha qurilmalar bitta bazadan foydalanadi: kassir sotganini oshpaz va direktor shu zahoti ko'radi. Tarix 90 kun saqlanadi va ko'rsatiladi.")}</p></div></div>`,
   bind(root) {
     const c = cfg();
+    { const d = $("#z-demo", root); if (d) d.onclick = () => S.db.reset && S.db.reset(); }
     $("#z-wipe", root).onsubmit = async e => {
       e.preventDefault(); const er = $("#z-we", root); er.textContent = "";
       if ($("#z-wq", root).value.trim().toUpperCase() !== "TOZALASH") { er.textContent = t("Tasdiqlash uchun TOZALASH deb yozing"); return; }
@@ -1916,7 +1917,7 @@ VIEWS.xabarlar = {
 /* ---------- DEMO rejimi: namuna ma'lumotlar, brauzerda saqlanadi ---------- */
 const DEMO = !!window.TG_DEMO;
 async function makeDemoDb() {
-  const KEY = "tg_demo_v3"; let store = ls(KEY);
+  const KEY = "tg_demo_v4"; let store = ls(KEY);
   if (!store || !store["meta/settings"]) store = await demoSeed();
   const subs = new Set();
   const save = () => ls(KEY, store);
