@@ -14,6 +14,7 @@ Qirg'iziston, Talas shahridagi grilxona uchun admin panel. 4 til (o'zbek, rus, i
 - **Kassir:** sotuv (grill, lavash, non, sous), oshpazga buyurtma (soni va vaqti majburiy), tayyor grillar soni, ishga kelish, kunlik oylik (oldim / keyin olaman), xarajat yozish, direktorga xabar va avans so'rovi.
 - **Oshpaz:** "Tandirga qo'ydim" taymeri (20–30 daqiqa), jiringlaydigan eslatmalar: 10 va 5 daqiqa qolganda, yangi buyurtma kelganda, buyurtmadan 40 daqiqa oldin, sotishga grill kam qolganda, omborda tovuq kam qolganda. Ombor, o'tin hisobi, oylik ish haqi (1 grill = 30 KGS), direktorga xabar va avans.
 - **Direktor:** bosh sahifa (pishirilgan / sotilgan / farq, kassadagi naqd, sotuvchi kelgan vaqt), kassa nazorati va pul olib ketish, kirim-chiqim va foyda-zarar, o'tin (kam qolganda eslatma), xabarlar va avanslarga javob, premiya va bonus berish, analitika, kun jurnali.
+- **Kamomad:** kuygan tovuq tandirdan chiqarilganda avtomatik yoziladi (soni × grill narxi oshpaz oyligidan ushlanadi). Direktor kassa kamomadi va boshqa kamomadlarni qo'lda yozadi yoki kechiradi. Har bir xodim o'z kamomadini ko'radi.
 - **Valyuta:** barcha summalar KGS, USD yoki UZS da ko'rinadi.
 
 ## Xavfsizlik
