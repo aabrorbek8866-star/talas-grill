@@ -1,0 +1,1242 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Talas Grill Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: sticky header with live rates, role tab strip, content in responsive card grid */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --surface2:#f6f8fa; --ink:#17202a; --muted:#5b6673; --line:#d6dce3;
+  --accent:#d9480f; --accent-soft:#fde4d6; --accent-ink:#ffffff;
+  --ok:#2b8a3e; --ok-soft:#dcf3e1; --warn:#b35c00; --warn-soft:#fff0d6; --bad:#c92a2a; --bad-soft:#fde2e2;
+  --cool:#1c6fc2; --cool-soft:#dcebfb;
+  --f-display:"Unbounded","Manrope",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --surface:#1a212a; --surface2:#151b22; --ink:#e8edf2; --muted:#94a0ad; --line:#2c3540;
+  --accent:#ff7a3d; --accent-soft:#3a2418; --accent-ink:#1a0d05;
+  --ok:#5fd17a; --ok-soft:#18301f; --warn:#ffc04d; --warn-soft:#33280f; --bad:#ff7070; --bad-soft:#3a1a1a;
+  --cool:#5aaef7; --cool-soft:#15283b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --surface:#1a212a; --surface2:#151b22; --ink:#e8edf2; --muted:#94a0ad; --line:#2c3540;
+  --accent:#ff7a3d; --accent-soft:#3a2418; --accent-ink:#1a0d05;
+  --ok:#5fd17a; --ok-soft:#18301f; --warn:#ffc04d; --warn-soft:#33280f; --bad:#ff7070; --bad-soft:#3a1a1a;
+  --cool:#5aaef7; --cool-soft:#15283b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0}
+h2{font-size:1.05rem}
+h3{font-size:.9rem;font-weight:500}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1240px;margin:0 auto}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+
+/* header */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.toprow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.mark{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;flex:none}
+.mark svg{width:22px;height:22px}
+.brand h1{font-size:1rem;white-space:nowrap}
+.brand .who{font-size:.8rem;color:var(--muted)}
+.rates{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.82rem}
+.rate{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:4px 10px;font-size:.8rem;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.clock{font-family:var(--f-display);font-size:.95rem}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin}
+.tabs button{flex:none;border:1px solid transparent;background:transparent;padding:7px 12px;border-radius:999px;font-weight:700;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+
+main{padding-block:18px 60px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(12,minmax(0,1fr))}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c7{grid-column:span 7}.c6{grid-column:span 6}.c5{grid-column:span 5}.c4{grid-column:span 4}.c3{grid-column:span 3}
+@media (max-width:900px){.c8,.c7,.c6,.c5,.c4{grid-column:span 12}.c3{grid-column:span 6}}
+@media (max-width:420px){.c3{grid-column:span 12}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.kpi .v{font-family:var(--f-display);font-size:1.6rem;font-weight:700;line-height:1.1}
+.kpi .s{font-size:.82rem;color:var(--muted)}
+.stripe-ok{box-shadow:inset 4px 0 0 var(--ok)}.stripe-warn{box-shadow:inset 4px 0 0 var(--warn)}.stripe-bad{box-shadow:inset 4px 0 0 var(--bad)}.stripe-acc{box-shadow:inset 4px 0 0 var(--accent)}
+
+.btn{border:1px solid var(--line);background:var(--surface2);padding:9px 14px;border-radius:10px;font-weight:700}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ok{background:var(--ok);color:var(--surface);border-color:var(--ok)}
+.btn.big{padding:14px 18px;font-size:1.05rem;width:100%}
+.btn.sm{padding:5px 10px;font-size:.82rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.field input,.field select{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:10px 12px;width:100%}
+.err{color:var(--bad);font-weight:600;font-size:.88rem}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:.76rem;font-weight:800;white-space:nowrap}
+.chip.new{background:var(--accent-soft);color:var(--accent)}
+.chip.acc{background:var(--cool-soft);color:var(--cool)}
+.chip.ready{background:var(--ok-soft);color:var(--ok)}
+.chip.done{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+
+/* lists */
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.li:first-child{border-top:0}
+.li .t{font-weight:800;min-width:46px}
+.empty{color:var(--muted);font-size:.9rem;padding:10px 0}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+/* POS */
+.pos-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.pos-item:first-child{border-top:0}
+.pos-item .nm{font-weight:800}
+.step{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.step button{border:0;background:var(--surface2);width:44px;height:44px;font-size:1.3rem;font-weight:800}
+.step input{width:54px;height:44px;border:0;text-align:center;background:var(--surface);font-weight:800;font-size:1.05rem}
+.pos-item .lt{min-width:90px;text-align:right;font-weight:700}
+.total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;border-top:2px solid var(--ink);padding-top:10px}
+.total .v{font-family:var(--f-display);font-size:1.7rem}
+.conv{display:flex;gap:8px;flex-wrap:wrap}
+
+/* tandoor */
+.dur{display:flex;gap:6px;flex-wrap:wrap}
+.dur button{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:8px 0;width:48px;font-weight:800}
+.dur button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.batch{border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;background:var(--surface2)}
+.batch.hot{border-color:var(--warn);background:var(--warn-soft)}
+.batch.over{border-color:var(--bad);background:var(--bad-soft)}
+.ring{width:96px;height:96px}
+.ring text{font-family:var(--f-display);font-weight:700}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+
+/* chart */
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* login */
+.login{min-height:100%;display:grid;place-items:center;padding-block:40px}
+.login .card{width:min(420px,100%);padding:26px;gap:16px}
+.login .mark{width:52px;height:52px;border-radius:14px}
+.login .mark svg{width:32px;height:32px}
+.hint{background:var(--surface2);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:.85rem}
+
+/* overlay + toast */
+.alarm{position:fixed;inset:0;z-index:50;background:color-mix(in srgb,var(--bad) 30%,transparent);display:grid;place-items:center;padding:20px}
+.alarm .box{background:var(--surface);border:3px solid var(--bad);border-radius:18px;padding:26px;max-width:440px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;animation:pulse 1s ease-in-out infinite alternate}
+.alarm .box h2{font-size:1.5rem;color:var(--bad)}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.025)}}
+@media (prefers-reduced-motion:reduce){.alarm .box{animation:none}}
+.toasts{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;z-index:40;pointer-events:none;padding-inline:16px}
+.toast{background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;max-width:520px;box-shadow:0 6px 20px rgb(0 0 0 / .25)}
+.toast.err{background:var(--bad);color:#fff}
+.langsel{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:4px 8px;font-size:.8rem;font-weight:700}
+textarea{width:100%}
+.banner{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:10px;padding:10px 12px;font-weight:600}
+</style>
+
+<div id="app"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>window.TG_DICT={"Saqlanmadi. Internetni tekshirib, qayta urinib ko'ring.": ["Не сохранено. Проверьте интернет и попробуйте снова.", "Not saved. Check the internet and try again.", "Сакталган жок. Интернетти текшерип, кайра аракет кылыңыз."], "Eslatma": ["Напоминание", "Reminder", "Эскертме"], "Ko'rdim": ["Понятно", "Got it", "Көрдүм"], "O'tin kam qoldi": ["Дров осталось мало", "Firewood is running low", "Отун аз калды"], "Omborda {0} {1} o'tin qoldi. Yangi o'tin keltirish kerak.": ["На складе осталось {0} {1} дров. Нужно привезти новые дрова.", "Only {0} {1} of firewood left. New firewood is needed.", "Кампада {0} {1} отун калды. Жаңы отун алып келүү керек."], "Vaqt tugadi! Tandirdan chiqaring": ["Время вышло! Доставайте из тандыра", "Time is up! Take it out of the tandoor", "Убакыт бүттү! Тандырдан чыгарыңыз"], "{0} ta tovuq pishish vaqti tugadi (soat {1}). Darhol tekshiring.": ["Время приготовления {0} кур истекло ({1}). Проверьте сейчас же.", "Cooking time for {0} chickens is over ({1}). Check right away.", "{0} тоок бышуу убактысы бүттү (саат {1}). Дароо текшериңиз."], "5 daqiqa qoldi": ["Осталось 5 минут", "5 minutes left", "5 мүнөт калды"], "Tandirga qarang, kuymadimi? {0} ta tovuq soat {1} da tayyor bo'ladi.": ["Проверьте тандыр, не подгорает ли? {0} кур будут готовы в {1}.", "Check the tandoor, is anything burning? {0} chickens will be ready at {1}.", "Тандырды караңыз, күйүп кеткен жокпу? {0} тоок саат {1} да даяр болот."], "10 daqiqa qoldi": ["Осталось 10 минут", "10 minutes left", "10 мүнөт калды"], "Buyurtma uchun tovuq pishiring": ["Приготовьте кур для заказа", "Cook chickens for an order", "Заказ үчүн тоок бышырыңыз"], "Soat {0} ga {1} ta grill kerak ({2} daqiqa qoldi). Sotish uchun tayyor turganlar: {3} ta. Bu buyurtma uchun alohida pishiring.": ["К {0} нужно {1} гриля (осталось {2} мин). Готово для продажи: {3}. Приготовьте отдельно для этого заказа.", "{1} grills are needed by {0} ({2} min left). Ready for sale now: {3}. Cook a separate batch for this order.", "Саат {0} га {1} гриль керек ({2} мүнөт калды). Сатууга даяр турганы: {3}. Бул заказ үчүн өзүнчө бышырыңыз."], "Sotish uchun grill kam qoldi": ["Мало гриля для продажи", "Few grills left for sale", "Сатууга гриль аз калды"], "Vitrinada {0} ta grill qoldi, tandirda {1} ta. Yangi partiya qo'ying.": ["На витрине {0} гриля, в тандыре {1}. Поставьте новую партию.", "{0} grills on the counter, {1} in the tandoor. Start a new batch.", "Витринада {0} гриль калды, тандырда {1}. Жаңы партия коюңуз."], "Omborda tovuq kam": ["Мало кур на складе", "Low chicken stock", "Кампада тоок аз"], "Omborda {0} ta muzlatilgan tovuq qoldi. Bitta tandirga {1} ta kerak.": ["На складе осталось {0} замороженных кур. На один тандыр нужно {1}.", "{0} frozen chickens left in stock. One tandoor needs {1}.", "Кампада {0} тоңдурулган тоок калды. Бир тандырга {1} керек."], "Yangi buyurtma": ["Новый заказ", "New order", "Жаңы заказ"], "{0} ta grill, soat {1} ga tayyor bo'lsin.": ["{0} гриля, готово к {1}.", "{0} grills, ready by {1}.", "{0} гриль, саат {1} га даяр болсун."], "Buyurtma tayyor": ["Заказ готов", "Order ready", "Заказ даяр"], "{0} ta grill (soat {1}) tayyor. Kassaga olib, mijozga bering.": ["{0} гриля (к {1}) готовы. Пробейте на кассе и отдайте клиенту.", "{0} grills (for {1}) are ready. Ring them up and hand them to the customer.", "{0} гриль (саат {1}) даяр. Кассага алып, кардарга бериңиз."], "Avans so'rovi": ["Запрос аванса", "Advance request", "Аванс суроо"], "Yangi xabar": ["Новое сообщение", "New message", "Жаңы билдирүү"], "Direktor javob berdi": ["Директор ответил", "The director replied", "Директор жооп берди"], "Sizga bonus berildi": ["Вам начислен бонус", "You received a bonus", "Сизге бонус берилди"], "Sizga premiya berildi": ["Вам начислена премия", "You received a premium", "Сизге сыйлык акы берилди"], "Avtomatik kurs bu qurilmada mavjud emas. Kursni qo'lda kiriting.": ["Автокурс недоступен на этом устройстве. Введите курс вручную.", "Automatic rates are not available on this device. Enter the rate manually.", "Бул түзмөктө автоматтык курс жок. Курсту кол менен киргизиңиз."], "Kurs yangilandi": ["Курс обновлён", "Rate updated", "Курс жаңыланды"], "Kursni olib bo'lmadi. Qo'lda kiriting.": ["Не удалось получить курс. Введите вручную.", "Could not get the rate. Enter it manually.", "Курсту алуу мүмкүн болбоду. Кол менен киргизиңиз."], "Grilxona hisob-kitob paneli": ["Панель учёта гриль-бара", "Grill shop accounting panel", "Гриль жайдын эсеп панели"], "Login": ["Логин", "Login", "Логин"], "masalan: kassir": ["например: kassir", "for example: kassir", "мисалы: kassir"], "Parol": ["Пароль", "Password", "Сырсөз"], "Kirish": ["Войти", "Sign in", "Кирүү"], "Tizim hali yuklanmadi. Bir necha soniya kuting.": ["Система ещё загружается. Подождите несколько секунд.", "The system is still loading. Wait a few seconds.", "Система али жүктөлө элек. Бир нече секунд күтүңүз."], "Login yoki parol noto'g'ri.": ["Неверный логин или пароль.", "Wrong login or password.", "Логин же сырсөз туура эмес."], "Ma'lumotlar bazasiga ulanib bo'lmadi. claude.ai hisobingizga kirganingizni tekshiring va sahifani qayta oching.": ["Не удалось подключиться к базе. Проверьте вход в claude.ai и откройте страницу заново.", "Could not connect to the database. Check that you are signed in to claude.ai and reopen the page.", "Маалымат базасына туташуу мүмкүн болбоду. claude.ai га киргениңизди текшерип, баракты кайра ачыңыз."], "Ma'lumotlar bazasiga ulanmoqda…": ["Подключение к базе…", "Connecting to the database…", "Маалымат базасына туташууда…"], "Tizim hali sozlanmagan: loginlar bazaga yozilmagan.": ["Система ещё не настроена: логины не записаны.", "The system is not set up yet: logins are missing.", "Система али орнотула элек: логиндер жазыла элек."], "Demo versiya": ["Демо-версия", "Demo version", "Демо версия"], "Ma'lumotlar namuna uchun to'qilgan.": ["Данные вымышлены для примера.", "All data here is made up for the demo.", "Маалыматтар үлгү үчүн ойлоп табылган."], "Loginlar": ["Логины", "Logins", "Логиндер"], "Demo ma'lumotlarini qayta tiklash": ["Сбросить демо-данные", "Reset demo data", "Демо маалыматтарды калыбына келтирүү"], "4 ta login bor: admin, kassir, oshpaz, direktor. Parolni administratordan oling.": ["4 логина: admin, kassir, oshpaz, direktor. Пароль получите у администратора.", "There are 4 logins: admin, kassir, oshpaz, direktor. Get your password from the administrator.", "4 логин бар: admin, kassir, oshpaz, direktor. Сырсөздү администратордон алыңыз."], "Valyuta": ["Валюта", "Currency", "Валюта"], "Chiqish": ["Выйти", "Sign out", "Чыгуу"], "Kurs kiritilmagan": ["Курс не задан", "No rate set", "Курс киргизиле элек"], "To'g'ri": ["Сходится", "Balanced", "Туура"], "Pishirilgan va sotilgan grillar soni teng.": ["Число приготовленных и проданных грилей совпадает.", "Grills cooked and sold are equal.", "Бышырылган жана сатылган гриль саны барабар."], "{0} ta qoldi": ["Осталось {0}", "{0} left", "{0} калды"], "Pishgan, lekin hali sotilmagan grillar (vitrinada bo'lishi kerak).": ["Приготовлены, но ещё не проданы (должны быть на витрине).", "Cooked but not sold yet (should be on the counter).", "Бышкан, бирок али сатыла элек гриль (витринада болушу керек)."], "{0} ta ortiqcha": ["{0} лишних", "{0} too many", "{0} ашык"], "Sotilgan grillar pishirilganidan ko'p. Tekshiring.": ["Продано больше, чем приготовлено. Проверьте.", "More grills sold than cooked. Please check.", "Сатылган гриль бышырылгандан көп. Текшериңиз."], "Bugungi hisob tekshiruvi": ["Сверка за сегодня", "Today's reconciliation", "Бүгүнкү эсеп текшерүү"], "Oshpaz pishirdi": ["Повар приготовил", "Cook made", "Ашпозчу бышырды"], "Sotuvchi sotdi": ["Продавец продал", "Seller sold", "Сатуучу сатты"], "Farq": ["Разница", "Difference", "Айырма"], "Qolgan vaqt": ["Осталось времени", "Time left", "Калган убакыт"], "Hozir tandirda tovuq yo'q.": ["Сейчас в тандыре пусто.", "Nothing in the tandoor right now.", "Азыр тандырда тоок жок."], "{0} ta tovuq": ["{0} кур", "{0} chickens", "{0} тоок"], "{0} daqiqa": ["{0} мин", "{0} min", "{0} мүнөт"], "Qo'yildi": ["Поставлено", "Put in", "Коюлду"], "Tayyor bo'ladi": ["Готово в", "Ready at", "Даяр болот"], "Chiqqan soni": ["Вышло штук", "Came out", "Чыккан саны"], "Tayyor, chiqardim": ["Готово, достал", "Done, taken out", "Даяр, чыгардым"], "Javob kutilmoqda": ["Ждёт ответа", "Awaiting reply", "Жооп күтүлүүдө"], "Rad etildi": ["Отклонено", "Declined", "Четке кагылды"], "Tasdiqlandi, kassadan berildi": ["Одобрено, выдано из кассы", "Approved, paid from the till", "Бекитилди, кассадан берилди"], "Tasdiqlandi, direktor qo'ldan berdi": ["Одобрено, директор выдал лично", "Approved, the director paid in person", "Бекитилди, директор колдон берди"], "O'qildi": ["Прочитано", "Read", "Окулду"], "Tasdiqlandi": ["Одобрено", "Approved", "Бекитилди"], "Sotuv": ["Продажа", "Sale", "Сатуу"], "Jami": ["Итого", "Total", "Жалпы"], "Tozalash": ["Очистить", "Clear", "Тазалоо"], "Sotildi — saqlash": ["Продано — сохранить", "Sold — save", "Сатылды — сактоо"], "Sotishga tayyor grillar": ["Гриль готов к продаже", "Grills ready to sell", "Сатууга даяр гриль"], "Tayyor buyurtmalar": ["Готовые заказы", "Ready orders", "Даяр заказдар"], "Bugungi sotuvlar": ["Продажи за сегодня", "Today's sales", "Бүгүнкү сатуулар"], "Kamida bitta mahsulot tanlang.": ["Выберите хотя бы один товар.", "Pick at least one item.", "Жок дегенде бир товар тандаңыз."], "Saqlandi: {0}": ["Сохранено: {0}", "Saved: {0}", "Сакталды: {0}"], "{0} dan": ["по {0}", "{0} each", "{0} дан"], "Buyurtma: {0} ta · {1}": ["Заказ: {0} шт · {1}", "Order: {0} · {1}", "Заказ: {0} · {1}"], "{0} ta": ["{0} шт", "{0}", "{0}"], "Tandirda {0} ta · tayyor bo'ladi {1}": ["В тандыре {0} · готово в {1}", "{0} in the tandoor · ready at {1}", "Тандырда {0} · даяр болот {1}"], "Kassaga olish": ["На кассу", "Ring up", "Кассага алуу"], "Tayyor buyurtma yo'q.": ["Готовых заказов нет.", "No ready orders.", "Даяр заказ жок."], "Bugun hali sotuv yo'q. Chapdan mahsulot tanlab, \"Sotildi\" tugmasini bosing.": ["Сегодня продаж ещё нет. Выберите товар слева и нажмите «Продано».", "No sales yet today. Pick items on the left and press \"Sold\".", "Бүгүн али сатуу жок. Сол жактан товар тандап, «Сатылды» баскычын басыңыз."], "Oshpazga buyurtma": ["Заказ повару", "Order for the cook", "Ашпозчуга заказ"], "Soni va tayyor bo'lish vaqti ikkalasi ham yozilmasa, so'rov oshpazga yuborilmaydi.": ["Без количества и времени готовности заказ повару не отправится.", "The order is not sent to the cook unless both quantity and ready time are filled in.", "Саны жана даяр болуу убактысы жазылбаса, заказ ашпозчуга жөнөтүлбөйт."], "Nechta grill": ["Сколько грилей", "How many grills", "Канча гриль"], "Soat nechada tayyor": ["К какому времени", "Ready by", "Саат канчага даяр"], "Izoh (ixtiyoriy)": ["Комментарий (необязательно)", "Note (optional)", "Эскертүү (милдеттүү эмес)"], "Oshpazga yuborish": ["Отправить повару", "Send to cook", "Ашпозчуга жөнөтүү"], "Bugungi buyurtmalar": ["Заказы на сегодня", "Today's orders", "Бүгүнкү заказдар"], "So'rov yuborilmadi: grillar sonini va tayyor bo'lish vaqtini kiriting.": ["Не отправлено: укажите количество и время готовности.", "Not sent: enter the quantity and ready time.", "Жөнөтүлгөн жок: гриль санын жана даяр болуу убактысын киргизиңиз."], "So'rov yuborilmadi: grillar sonini kiriting.": ["Не отправлено: укажите количество.", "Not sent: enter the quantity.", "Жөнөтүлгөн жок: гриль санын киргизиңиз."], "So'rov yuborilmadi: tayyor bo'lish vaqtini kiriting.": ["Не отправлено: укажите время готовности.", "Not sent: enter the ready time.", "Жөнөтүлгөн жок: даяр болуу убактысын киргизиңиз."], "Oshpazga yuborildi: {0} ta, soat {1}": ["Отправлено повару: {0} шт к {1}", "Sent to the cook: {0} by {1}", "Ашпозчуга жөнөтүлдү: {0}, саат {1}"], "{0} ta buyurtma · {1} ta grill": ["{0} заказов · {1} грилей", "{0} orders · {1} grills", "{0} заказ · {1} гриль"], "{0} ta grill": ["{0} грилей", "{0} grills", "{0} гриль"], "Yuborildi {0}": ["Отправлено {0}", "Sent {0}", "Жөнөтүлдү {0}"], "Bugun buyurtma yo'q.": ["Сегодня заказов нет.", "No orders today.", "Бүгүн заказ жок."], "Ishga kelish": ["Приход на работу", "Arrival", "Ишке келүү"], "Kunlik oylik": ["Дневная зарплата", "Daily wage", "Күнүмдүк айлык"], "Keyin olinadigan oyliklar": ["Зарплата к выдаче позже", "Wages to collect later", "Кийин алынуучу айлыктар"], "Bugungi kassa": ["Касса за сегодня", "Today's till", "Бүгүнкү касса"], "Kelgan vaqtingiz yozildi": ["Время прихода записано", "Arrival time saved", "Келген убактыңыз жазылды"], "Oylik olindi: {0}": ["Зарплата получена: {0}", "Wage taken: {0}", "Айлык алынды: {0}"], "Oylik keyinga yozildi": ["Зарплата отложена", "Wage saved for later", "Айлык кийинкиге жазылды"], "Oylik olindi deb belgilandi": ["Отмечено как полученное", "Marked as taken", "Айлык алынды деп белгиленди"], "Bugun ishga keldingiz": ["Вы пришли сегодня в", "You arrived today at", "Бүгүн ишке келдиңиз"], "Ishga kelganingizni belgilang. Direktor vaqtni ko'radi.": ["Отметьте приход. Директор увидит время.", "Mark your arrival. The director will see the time.", "Ишке келгениңизди белгилеңиз. Директор убакытты көрөт."], "Ishga keldim": ["Я на работе", "I'm at work", "Ишке келдим"], "Bugungi oylik": ["Зарплата за сегодня", "Today's wage", "Бүгүнкү айлык"], "Oldim": ["Получил", "Taken", "Алдым"], "Keyin olaman": ["Возьму позже", "Take later", "Кийин алам"], "Oylik kassadan ayirildi.": ["Зарплата вычтена из кассы.", "The wage was deducted from the till.", "Айлык кассадан кемитилди."], "Ikkala holatda ham summa kassadan minus bo'ladi.": ["В обоих случаях сумма вычитается из кассы.", "Either way the amount is deducted from the till.", "Эки учурда тең сумма кассадан кемитилет."], "Endi oldim": ["Теперь получил", "Taken now", "Эми алдым"], "Qarz yo'q.": ["Долгов нет.", "Nothing owed.", "Карыз жок."], "Sotilgan grillar": ["Продано грилей", "Grills sold", "Сатылган гриль"], "Lavash": ["Лаваш", "Lavash", "Лаваш"], "Non": ["Лепёшка", "Bread", "Нан"], "Sous": ["Соус", "Sauce", "Соус"], "Bugungi tushum": ["Выручка за сегодня", "Today's revenue", "Бүгүнкү түшүм"], "Bugungi sotuvchi oyligi": ["Зарплата продавца за сегодня", "Seller's wage today", "Бүгүнкү сатуучунун айлыгы"], "Direktor olib ketdi (bugun)": ["Директор забрал (сегодня)", "Collected by director (today)", "Директор алып кетти (бүгүн)"], "Kassada hozir naqd": ["Наличные в кассе сейчас", "Cash in the till now", "Кассада азыр накталай"], "Tandirga qo'yish": ["Загрузка тандыра", "Load the tandoor", "Тандырга коюу"], "Tovuq soni": ["Количество кур", "Chickens", "Тоок саны"], "Muzlatilgan tovuq omborda": ["Замороженных кур на складе", "Frozen chickens in stock", "Кампада тоңдурулган тоок"], "Pishish vaqti (daqiqa)": ["Время готовки (мин)", "Cooking time (min)", "Бышуу убактысы (мүнөт)"], "Tovuqni tandirga qo'ydim": ["Поставил кур в тандыр", "Chickens are in the tandoor", "Тоокту тандырга койдум"], "Bosganingizda taymer ishga tushadi. 10 va 5 daqiqa qolganda ovozli eslatma chiqadi. Tovuqlar ombordan avtomatik ayiriladi.": ["При нажатии запускается таймер. За 10 и 5 минут прозвучит сигнал. Куры автоматически списываются со склада.", "Pressing it starts the timer. An alarm rings at 10 and 5 minutes left. Chickens are taken off the stock automatically.", "Басканыңызда таймер иштейт. 10 жана 5 мүнөт калганда үн менен эскертет. Тооктор кампадан автоматтык түрдө кемитилет."], "Tandirda hozir": ["Сейчас в тандыре", "In the tandoor now", "Азыр тандырда"], "Bildirishnomani yoqish": ["Включить уведомления", "Turn on notifications", "Билдирмелерди күйгүзүү"], "Bugun pishirilgan": ["Приготовлено сегодня", "Cooked today", "Бүгүн бышырылган"], "Tovuq sonini kiriting.": ["Укажите количество кур.", "Enter the number of chickens.", "Тоок санын киргизиңиз."], "Omborda faqat {0} ta tovuq bor. Avval \"Ombor\" bo'limida kirim qiling.": ["На складе только {0} кур. Сначала оформите приход в разделе «Склад».", "Only {0} chickens in stock. Add a delivery under \"Stock\" first.", "Кампада болгону {0} тоок бар. Адегенде «Кампа» бөлүмүндө кирим кылыңыз."], "Taymer ishga tushdi: {0} ta, {1} daqiqa": ["Таймер запущен: {0} шт, {1} мин", "Timer started: {0}, {1} min", "Таймер иштеди: {0}, {1} мүнөт"], "Tayyor grillar kassaga ko'rindi": ["Готовый гриль виден на кассе", "Ready grills now show at the till", "Даяр гриль кассада көрүндү"], "{0} ta yaroqsiz": ["{0} брак", "{0} spoiled", "{0} жараксыз"], "Bugun hali partiya chiqmagan.": ["Сегодня партий ещё не было.", "No batches finished today yet.", "Бүгүн али партия чыга элек."], "Sotuvchidan kelgan buyurtmalar": ["Заказы от продавца", "Orders from the seller", "Сатуучудан келген заказдар"], "Har bir buyurtma vaqtidan {0} daqiqa oldin jiringlab eslatiladi.": ["За {0} минут до каждого заказа прозвучит напоминание.", "An alarm rings {0} minutes before each order is due.", "Ар бир заказдан {0} мүнөт мурун үн менен эскертилет."], "Kutilmoqda: {0} ta buyurtma, {1} ta grill": ["Ожидают: {0} заказов, {1} грилей", "Waiting: {0} orders, {1} grills", "Күтүлүүдө: {0} заказ, {1} гриль"], "{0} daqiqa qoldi": ["осталось {0} мин", "{0} min left", "{0} мүнөт калды"], "{0} daqiqa kechikdi": ["опоздание {0} мин", "{0} min late", "{0} мүнөт кечикти"], "Qabul qildim": ["Принял", "Accept", "Кабыл алдым"], "Tayyor": ["Готово", "Ready", "Даяр"], "Kelgan: {0}": ["Получен: {0}", "Received: {0}", "Келди: {0}"], "Bugun buyurtma kelmagan. Sotuvchi buyurtma yuborsa, shu yerda ovozli xabar bilan chiqadi.": ["Сегодня заказов нет. Когда продавец отправит заказ, он появится здесь со звуковым сигналом.", "No orders today. When the seller sends one, it appears here with an alarm.", "Бүгүн заказ келген жок. Сатуучу заказ жөнөтсө, ушул жерде үн менен чыгат."], "Omborda muzlatilgan tovuq": ["Замороженных кур на складе", "Frozen chickens in stock", "Кампада тоңдурулган тоок"], "Kirim (tovuq keldi)": ["Приход (привезли кур)", "Delivery (chickens arrived)", "Кирим (тоок келди)"], "Soni": ["Количество", "Quantity", "Саны"], "Omborga qo'shish": ["Добавить на склад", "Add to stock", "Кампага кошуу"], "Sanab tuzatish": ["Корректировка по пересчёту", "Correct after counting", "Санап оңдоо"], "Aslida nechta bor": ["Сколько на самом деле", "Actual count", "Чындыгында канча бар"], "Tuzatish": ["Исправить", "Correct", "Оңдоо"], "Ombordagi haqiqiy son bilan farq bo'lsa ishlating.": ["Используйте, если есть расхождение с реальным остатком.", "Use this if the real count differs.", "Кампадагы чыныгы сан менен айырма болсо колдонуңуз."], "Oxirgi 14 kun harakati": ["Движение за 14 дней", "Last 14 days", "Акыркы 14 күндүн кыймылы"], "Sana": ["Дата", "Date", "Күнү"], "Kirim": ["Приход", "Income", "Кирим"], "Tandirga": ["В тандыр", "To tandoor", "Тандырга"], "Pishib chiqdi": ["Приготовлено", "Cooked", "Бышып чыкты"], "Sonini kiriting.": ["Укажите количество.", "Enter the quantity.", "Санын киргизиңиз."], "Omborga {0} ta qo'shildi": ["На склад добавлено {0}", "{0} added to stock", "Кампага {0} кошулду"], "Ombor soni tuzatildi": ["Остаток исправлен", "Stock corrected", "Кампа саны оңдолду"], "Oxirgi o'zgarish: {0}": ["Последнее изменение: {0}", "Last change: {0}", "Акыркы өзгөрүү: {0}"], "Hali kirim qilinmagan": ["Приходов ещё не было", "No deliveries yet", "Али кирим кылына элек"], "Kunlar bo'yicha": ["По дням", "By day", "Күндөр боюнча"], "Pishirilgan": ["Приготовлено", "Cooked", "Бышырылган"], "Ish haqi": ["Заработок", "Earnings", "Эмгек акы"], "Bugun": ["Сегодня", "Today", "Бүгүн"], "Oxirgi 7 kun": ["Последние 7 дней", "Last 7 days", "Акыркы 7 күн"], "Shu oy": ["Этот месяц", "This month", "Ушул ай"], "Bir grill uchun": ["За один гриль", "Per grill", "Бир гриль үчүн"], "Ish haqi stavkasi": ["Ставка оплаты", "Pay rate", "Эмгек акы ставкасы"], "Sotuvlar (vaqti bilan)": ["Продажи (по времени)", "Sales (with time)", "Сатуулар (убактысы менен)"], "Buyurtmalar": ["Заказы", "Orders", "Заказдар"], "Bugun pishirildi": ["Приготовлено сегодня", "Cooked today", "Бүгүн бышырылды"], "+ {0} ta tandirda": ["+ {0} в тандыре", "+ {0} in the tandoor", "+ {0} тандырда"], "Tandir bo'sh": ["Тандыр пуст", "Tandoor is empty", "Тандыр бош"], "Bugun sotildi": ["Продано сегодня", "Sold today", "Бүгүн сатылды"], "Kassada naqd": ["Наличные в кассе", "Cash in till", "Кассада накталай"], "Shundan oylik qarzi: {0}": ["Из них долг по зарплате: {0}", "Of which wages owed: {0}", "Анын ичинде айлык карызы: {0}"], "Hammasi hisobda": ["Всё учтено", "All accounted for", "Баары эсепте"], "Sotuvchi keldi": ["Продавец пришёл", "Seller arrived", "Сатуучу келди"], "Bugun ishga keldi": ["Пришёл сегодня", "Came in today", "Бүгүн ишке келди"], "Hali belgilanmagan": ["Ещё не отмечено", "Not marked yet", "Али белгилене элек"], "Omborda tovuq": ["Кур на складе", "Chickens in stock", "Кампада тоок"], "Bugun tandirga: {0} ta": ["Сегодня в тандыр: {0}", "Into the tandoor today: {0}", "Бүгүн тандырга: {0}"], "Oshpaz ish haqi (bugun)": ["Заработок повара (сегодня)", "Cook's pay (today)", "Ашпозчунун эмгек акысы (бүгүн)"], "Bugun olib ketildi": ["Изъято сегодня", "Collected today", "Бүгүн алып кетилди"], "Direktor kassadan": ["Директор из кассы", "By the director from the till", "Директор кассадан"], "Omborda o'tin": ["Дров на складе", "Firewood in stock", "Кампада отун"], "Kam qoldi!": ["Осталось мало!", "Running low!", "Аз калды!"], "Javob kutayotgan xabarlar": ["Сообщения без ответа", "Messages awaiting reply", "Жооп күткөн билдирүүлөр"], "Xabarlar va avans bo'limida": ["В разделе «Сообщения и аванс»", "Under \"Messages and advances\"", "«Билдирүүлөр жана аванс» бөлүмүндө"], "Bugungi xarajatlar": ["Расходы за сегодня", "Today's expenses", "Бүгүнкү чыгымдар"], "Kirim-chiqim bo'limida": ["В разделе «Приход-расход»", "Under \"Income and expenses\"", "«Кирим-чыгым» бөлүмүндө"], "Bugungi premiya va bonus": ["Премии и бонусы сегодня", "Premiums and bonuses today", "Бүгүнкү сыйлык акы жана бонус"], "Bugun hali sotuv yo'q.": ["Сегодня продаж ещё нет.", "No sales yet today.", "Бүгүн али сатуу жок."], "Kassadagi pulni olib ketish": ["Изъять деньги из кассы", "Collect cash from the till", "Кассадагы акчаны алып кетүү"], "Summa (KGS)": ["Сумма (KGS)", "Amount (KGS)", "Сумма (KGS)"], "Izoh": ["Комментарий", "Note", "Эскертүү"], "Pulni oldim": ["Деньги забрал", "Cash collected", "Акчаны алдым"], "Olib ketilgan pullar": ["Изъятые деньги", "Cash collections", "Алып кетилген акчалар"], "Oyliklar tarixi": ["История зарплат", "Wage history", "Айлыктар тарыхы"], "Summani kiriting.": ["Укажите сумму.", "Enter the amount.", "Сумманы киргизиңиз."], "Kassadan olindi: {0}": ["Изъято из кассы: {0}", "Collected from the till: {0}", "Кассадан алынды: {0}"], "Oylik qarzi (keyin olinadi)": ["Долг по зарплате (выдать позже)", "Wages owed (to pay later)", "Айлык карызы (кийин алынат)"], "Kassadan ajratilgan": ["Зарезервировано из кассы", "Set aside from the till", "Кассадан бөлүнгөн"], "Sof qoldiq": ["Чистый остаток", "Net balance", "Таза калдык"], "Naqd − oylik qarzi": ["Наличные − долг по зарплате", "Cash − wages owed", "Накталай − айлык карызы"], "Jami olib ketilgan": ["Всего изъято", "Total collected", "Жалпы алып кетилген"], "Oxirgi 90 kun": ["Последние 90 дней", "Last 90 days", "Акыркы 90 күн"], "Hali pul olib ketilmagan.": ["Изъятий ещё не было.", "No cash collected yet.", "Али акча алып кетиле элек."], "Sotuvchi": ["Продавец", "Seller", "Сатуучу"], "Oldi": ["Получил", "Taken", "Алды"], "Keyin oladi": ["Возьмёт позже", "Will take later", "Кийин алат"], "Oylik yozuvlari yo'q.": ["Записей о зарплате нет.", "No wage records.", "Айлык жазуулары жок."], "Analitika": ["Аналитика", "Analytics", "Аналитика"], "{0} kun": ["{0} дней", "{0} days", "{0} күн"], "Pishirilgan va sotilgan grillar": ["Приготовлено и продано", "Grills cooked and sold", "Бышырылган жана сатылган гриль"], "Kunlik tushum": ["Выручка по дням", "Daily revenue", "Күнүмдүк түшүм"], "Kunlar jadvali": ["Таблица по дням", "Daily table", "Күндөр таблицасы"], "Pishirildi": ["Приготовлено", "Cooked", "Бышырылды"], "O'rtacha {0} ta/kun": ["В среднем {0} в день", "Average {0} per day", "Орточо {0} / күн"], "Sotildi": ["Продано", "Sold", "Сатылды"], "Farq: {0}": ["Разница: {0}", "Difference: {0}", "Айырма: {0}"], "Tushum": ["Выручка", "Revenue", "Түшүм"], "Oshpaz ish haqi": ["Оплата повара", "Cook's pay", "Ашпозчунун эмгек акысы"], "Sotuvchi oyligi": ["Зарплата продавца", "Seller's wage", "Сатуучунун айлыгы"], "Kun jurnali": ["Журнал дня", "Day log", "Күн журналы"], "Sotuvchi ishga keldi": ["Продавец пришёл на работу", "Seller arrived at work", "Сатуучу ишке келди"], "Buyurtma: {0} ta, soat {1} ga": ["Заказ: {0} шт к {1}", "Order: {0} by {1}", "Заказ: {0}, саат {1} га"], "Tandirga qo'yildi: {0} ta, {1} daqiqa": ["В тандыр: {0} шт, {1} мин", "Into the tandoor: {0}, {1} min", "Тандырга коюлду: {0}, {1} мүнөт"], "Tandirdan chiqdi: {0} ta": ["Из тандыра: {0} шт", "Out of the tandoor: {0}", "Тандырдан чыкты: {0}"], "Omborga kirim: {0} ta": ["Приход на склад: {0}", "Stock delivery: {0}", "Кампага кирим: {0}"], "Sotuvchi oyligi (oldi)": ["Зарплата продавца (получил)", "Seller's wage (taken)", "Сатуучунун айлыгы (алды)"], "Sotuvchi oyligi (keyin oladi)": ["Зарплата продавца (возьмёт позже)", "Seller's wage (later)", "Сатуучунун айлыгы (кийин алат)"], "Direktor kassadan oldi": ["Директор изъял из кассы", "Director collected from the till", "Директор кассадан алды"], "Xarajat": ["Расход", "Expense", "Чыгым"], "O'tin keldi": ["Привезли дрова", "Firewood arrived", "Отун келди"], "O'tin ishlatildi": ["Дрова израсходованы", "Firewood used", "Отун колдонулду"], "Direktor": ["Директор", "Director", "Директор"], "Avans": ["Аванс", "Advance", "Аванс"], "Bonus": ["Бонус", "Bonus", "Бонус"], "Premiya": ["Премия", "Premium", "Сыйлык акы"], "Pishirildi {0} ta · Sotildi {1} ta · Tushum {2}": ["Приготовлено {0} · Продано {1} · Выручка {2}", "Cooked {0} · Sold {1} · Revenue {2}", "Бышырылды {0} · Сатылды {1} · Түшүм {2}"], "Bu kunda yozuv yo'q.": ["За этот день записей нет.", "No records for this day.", "Бул күнү жазуу жок."], "Narxlar va stavkalar (KGS)": ["Цены и ставки (KGS)", "Prices and rates (KGS)", "Баалар жана ставкалар (KGS)"], "Oshpaz, 1 grill uchun": ["Повару за 1 гриль", "Cook, per grill", "Ашпозчу, 1 гриль үчүн"], "Sotuvchi, kunlik": ["Продавцу в день", "Seller, per day", "Сатуучу, күнүнө"], "1 tandirga tovuq": ["Кур на 1 тандыр", "Chickens per tandoor", "1 тандырга тоок"], "Odatiy pishish (daq.)": ["Обычное время (мин)", "Usual cooking time (min)", "Адаттагы бышуу (мүн.)"], "Buyurtmadan necha daqiqa oldin eslatish": ["За сколько минут до заказа напоминать", "Remind this many minutes before an order", "Заказдан канча мүнөт мурун эскертүү"], "Grill kam qolganda eslatish (dona)": ["Напоминать, когда гриля осталось (шт)", "Alert when grills left drop to", "Гриль аз калганда эскертүү (даана)"], "O'tin o'lchov birligi": ["Единица дров", "Firewood unit", "Отун өлчөм бирдиги"], "O'tin kam qolganda eslatish": ["Напоминать, когда дров осталось", "Alert when firewood drops to", "Отун аз калганда эскертүү"], "Saqlash": ["Сохранить", "Save", "Сактоо"], "Valyuta kursi": ["Курс валют", "Exchange rate", "Валюта курсу"], "Internetdan yangilash": ["Обновить из интернета", "Update from the internet", "Интернеттен жаңылоо"], "Qo'lda saqlash": ["Сохранить вручную", "Save manually", "Кол менен сактоо"], "Parolni almashtirish": ["Смена пароля", "Change password", "Сырсөздү алмаштыруу"], "Yangi parol": ["Новый пароль", "New password", "Жаңы сырсөз"], "Parolni saqlash": ["Сохранить пароль", "Save password", "Сырсөздү сактоо"], "Ma'lumot": ["Информация", "About", "Маалымат"], "Barcha qurilmalar bitta bazadan foydalanadi: kassir sotganini oshpaz va direktor shu zahoti ko'radi. Tarix 90 kun saqlanadi va ko'rsatiladi.": ["Все устройства используют одну базу: продажи кассира повар и директор видят сразу. История хранится и показывается за 90 дней.", "All devices share one database: the cook and director see the cashier's sales instantly. History covers the last 90 days.", "Бардык түзмөктөр бир базаны колдонот: кассир саткандарды ашпозчу менен директор ошол замат көрөт. Тарых 90 күн көрсөтүлөт."], "Sozlamalar saqlandi": ["Настройки сохранены", "Settings saved", "Жөндөөлөр сакталды"], "Ikkala kursni kiriting": ["Введите оба курса", "Enter both rates", "Эки курсту тең киргизиңиз"], "Kurs saqlandi": ["Курс сохранён", "Rate saved", "Курс сакталды"], "Parol kamida 6 belgidan iborat bo'lsin.": ["Пароль должен быть не короче 6 символов.", "The password must be at least 6 characters.", "Сырсөз кеминде 6 белгиден турсун."], "\"{0}\" paroli almashtirildi": ["Пароль «{0}» изменён", "Password for \"{0}\" changed", "«{0}» сырсөзү алмаштырылды"], "Oxirgi yangilanish: {0} · manba: {1}": ["Обновлено: {0} · источник: {1}", "Last updated: {0} · source: {1}", "Акыркы жаңылоо: {0} · булак: {1}"], "Kurs hali kiritilmagan.": ["Курс ещё не задан.", "No rate set yet.", "Курс али киргизиле элек."], "Yangi yozuv": ["Новая запись", "New entry", "Жаңы жазуу"], "Chiqim (xarajat)": ["Расход", "Expense", "Чыгым"], "Turi": ["Тип", "Type", "Түрү"], "Pul kassadan olindi": ["Деньги взяты из кассы", "Paid from the till", "Акча кассадан алынды"], "Foyda va zarar": ["Прибыль и убыток", "Profit and loss", "Пайда жана зыян"], "Kirim-chiqim yozuvlari": ["Записи прихода и расхода", "Income and expense records", "Кирим-чыгым жазуулары"], "Pul kassaga qo'yildi": ["Деньги положены в кассу", "Put into the till", "Акча кассага салынды"], "Grill va qo'shimchalar sotuvi": ["Продажа гриля и добавок", "Grill and extras sales", "Гриль жана кошумчалар сатуусу"], "Boshqa kirim": ["Прочий приход", "Other income", "Башка кирим"], "Jami kirim": ["Всего приход", "Total income", "Жалпы кирим"], "Oshpaz ish haqi ({0} ta grill)": ["Оплата повара ({0} грилей)", "Cook's pay ({0} grills)", "Ашпозчунун эмгек акысы ({0} гриль)"], "Premiya va bonuslar": ["Премии и бонусы", "Premiums and bonuses", "Сыйлык акылар жана бонустар"], "Jami chiqim": ["Всего расход", "Total expenses", "Жалпы чыгым"], "Sof foyda": ["Чистая прибыль", "Net profit", "Таза пайда"], "Zarar": ["Убыток", "Loss", "Зыян"], "Berilgan avanslar (oylikdan ushlanadi)": ["Выданные авансы (удерживаются из зарплаты)", "Advances paid (deducted from wages)", "Берилген аванстар (айлыктан кармалат)"], "Hali yozuv yo'q. Har bir xarajatni shu yerga yozing: tovuq, o'tin, ijara, svet va boshqalar.": ["Записей пока нет. Вносите сюда каждый расход: куры, дрова, аренда, свет и прочее.", "No records yet. Log every expense here: chickens, firewood, rent, electricity and more.", "Али жазуу жок. Ар бир чыгымды ушул жерге жазыңыз: тоок, отун, ижара, жарык жана башкалар."], "Ayirish": ["Списать", "Deduct", "Кемитүү"], "Narxi (KGS, ixtiyoriy)": ["Цена (KGS, необязательно)", "Price (KGS, optional)", "Баасы (KGS, милдеттүү эмес)"], "Qo'shish": ["Добавить", "Add", "Кошуу"], "Narx yozilsa, kirim-chiqimga xarajat sifatida tushadi.": ["Если указать цену, она попадёт в расходы.", "If you enter a price, it is logged as an expense.", "Баа жазылса, чыгым катары кирим-чыгымга түшөт."], "Oxirgi 14 kun": ["Последние 14 дней", "Last 14 days", "Акыркы 14 күн"], "Keldi": ["Пришло", "Arrived", "Келди"], "Ishlatildi": ["Израсходовано", "Used", "Колдонулду"], "Pishirilgan grill": ["Приготовлено грилей", "Grills cooked", "Бышырылган гриль"], "Miqdori ({0})": ["Количество ({0})", "Amount ({0})", "Өлчөмү ({0})"], "O'tin ayirildi: {0} {1}": ["Списано дров: {0} {1}", "Firewood deducted: {0} {1}", "Отун кемитилди: {0} {1}"], "O'tin qo'shildi: {0} {1}": ["Добавлено дров: {0} {1}", "Firewood added: {0} {1}", "Отун кошулду: {0} {1}"], "Kam qoldi! {0} {1} dan kam bo'lsa direktorga eslatma boradi.": ["Мало! Когда меньше {0} {1}, директору приходит напоминание.", "Running low! Below {0} {1} the director gets an alert.", "Аз калды! {0} {1} дан аз болсо, директорго эскертме барат."], "{0} {1} dan kam qolsa, direktorga eslatma boradi.": ["Если останется меньше {0} {1}, директору придёт напоминание.", "If it drops to {0} {1}, the director gets an alert.", "{0} {1} дан аз калса, директорго эскертме барат."], "Direktorga yozish": ["Написать директору", "Write to the director", "Директорго жазуу"], "Xabar": ["Сообщение", "Message", "Билдирүү"], "Avans so'rash": ["Попросить аванс", "Ask for an advance", "Аванс суроо"], "Avans summasi (KGS)": ["Сумма аванса (KGS)", "Advance amount (KGS)", "Аванс суммасы (KGS)"], "Xabar matni": ["Текст сообщения", "Message text", "Билдирүү тексти"], "Direktorga yuborish": ["Отправить директору", "Send to the director", "Директорго жөнөтүү"], "Mening so'rovlarim": ["Мои запросы", "My requests", "Менин суроолорум"], "Premiya va bonuslarim": ["Мои премии и бонусы", "My premiums and bonuses", "Менин сыйлык акыларым жана бонустарым"], "Sababi (ixtiyoriy)": ["Причина (необязательно)", "Reason (optional)", "Себеби (милдеттүү эмес)"], "Avans summasini kiriting.": ["Укажите сумму аванса.", "Enter the advance amount.", "Аванс суммасын киргизиңиз."], "Xabar matnini yozing.": ["Напишите текст сообщения.", "Write the message.", "Билдирүү текстин жазыңыз."], "Direktorga yuborildi": ["Отправлено директору", "Sent to the director", "Директорго жөнөтүлдү"], "Javob": ["Ответ", "Reply", "Жооп"], "Hali so'rov yubormagansiz.": ["Вы ещё ничего не отправляли.", "You have not sent any requests yet.", "Сиз али суроо жөнөтө элексиз."], "Hozircha yo'q.": ["Пока нет.", "None yet.", "Азырынча жок."], "Xodimlardan kelgan xabarlar": ["Сообщения от сотрудников", "Messages from staff", "Кызматкерлерден келген билдирүүлөр"], "Premiya yoki bonus berish": ["Выдать премию или бонус", "Give a premium or bonus", "Сыйлык акы же бонус берүү"], "Kimga": ["Кому", "To", "Кимге"], "Sotuvchi · kassir": ["Продавец · кассир", "Seller · cashier", "Сатуучу · кассир"], "Oshpaz": ["Повар", "Cook", "Ашпозчу"], "Sababi": ["Причина", "Reason", "Себеби"], "Pul kassadan berildi": ["Выдано из кассы", "Paid from the till", "Акча кассадан берилди"], "Berish": ["Выдать", "Give", "Берүү"], "Berilgan premiya va bonuslar": ["Выданные премии и бонусы", "Premiums and bonuses given", "Берилген сыйлык акылар жана бонустар"], "Javob yuborildi": ["Ответ отправлен", "Reply sent", "Жооп жөнөтүлдү"], "Berildi: {0}": ["Выдано: {0}", "Given: {0}", "Берилди: {0}"], "Javob kutayotgan: {0}": ["Ждут ответа: {0}", "Awaiting reply: {0}", "Жооп күткөн: {0}"], "Javob (ixtiyoriy)": ["Ответ (необязательно)", "Reply (optional)", "Жооп (милдеттүү эмес)"], "Kassadan berish": ["Выдать из кассы", "Pay from the till", "Кассадан берүү"], "Qo'ldan berdim": ["Выдал лично", "Paid in person", "Колдон бердим"], "Rad etish": ["Отклонить", "Decline", "Четке кагуу"], "O'qidim": ["Прочитал", "Mark read", "Окудум"], "Xodimlardan xabar yo'q.": ["Сообщений от сотрудников нет.", "No messages from staff.", "Кызматкерлерден билдирүү жок."], "Ma'lumotlar hali yuklanmadi. Internet aloqasini tekshiring.": ["Данные ещё не загрузились. Проверьте интернет.", "Data has not loaded yet. Check the internet connection.", "Маалыматтар али жүктөлө элек. Интернетти текшериңиз."], "Sessiya tugadi, qayta kiring.": ["Сеанс завершён, войдите снова.", "Session ended, please sign in again.", "Сеанс бүттү, кайра кириңиз."], "Ma'lumotlarni o'qib bo'lmadi.": ["Не удалось прочитать данные.", "Could not read the data.", "Маалыматтарды окуу мүмкүн болбоду."], "Bosh sahifa": ["Главная", "Home", "Башкы бет"], "Kassa": ["Касса", "Till", "Касса"], "Kun yakuni": ["Итоги дня", "End of day", "Күндүн жыйынтыгы"], "Tandir": ["Тандыр", "Tandoor", "Тандыр"], "Ombor": ["Склад", "Stock", "Кампа"], "Oylik ish haqim": ["Моя зарплата", "My pay", "Менин айлыгым"], "Kassa nazorati": ["Контроль кассы", "Till control", "Касса көзөмөлү"], "Jurnal": ["Журнал", "Log", "Журнал"], "Kirim-chiqim": ["Приход-расход", "Income & expenses", "Кирим-чыгым"], "O'tin": ["Дрова", "Firewood", "Отун"], "Xabarlar va avans": ["Сообщения и аванс", "Messages & advances", "Билдирүүлөр жана аванс"], "Direktorga xabar": ["Сообщение директору", "Message the director", "Директорго билдирүү"], "Sozlamalar": ["Настройки", "Settings", "Жөндөөлөр"], "Administrator": ["Администратор", "Administrator", "Администратор"], "Tovuq grili": ["Курица-гриль", "Grilled chicken", "Тоок гриль"], "Yangi": ["Новый", "New", "Жаңы"], "Qabul qilindi": ["Принят", "Accepted", "Кабыл алынды"], "Berildi": ["Выдан", "Handed over", "Берилди"], "Tovuq xaridi": ["Закупка кур", "Chicken purchase", "Тоок сатып алуу"], "Lavash va non": ["Лаваш и лепёшки", "Lavash and bread", "Лаваш жана нан"], "Sous va ziravorlar": ["Соусы и специи", "Sauces and spices", "Соус жана татымалдар"], "Ijara": ["Аренда", "Rent", "Ижара"], "Kommunal (svet, gaz, suv)": ["Коммунальные (свет, газ, вода)", "Utilities (power, gas, water)", "Коммуналдык (жарык, газ, суу)"], "Transport": ["Транспорт", "Transport", "Транспорт"], "Boshqa": ["Прочее", "Other", "Башка"], "Tovuq kam qoldi": ["Кур осталось мало", "Chickens are running low", "Тоок аз калды"], "Tandir ta'mir talab qiladi": ["Тандыр требует ремонта", "The tandoor needs repair", "Тандыр оңдоону талап кылат"], "Lavash tugadi": ["Лаваш закончился", "Lavash ran out", "Лаваш бүттү"], "Sous tugadi": ["Соус закончился", "Sauce ran out", "Соус бүттү"], "Kassada mayda pul yo'q": ["В кассе нет мелочи", "No small change in the till", "Кассада майда акча жок"], "qop": ["мешок", "sack", "кап"], "bog'": ["вязанка", "bundle", "боо"], "kassa": ["касса", "till", "касса"]};</script>
+<script>window.TG_DEMO=true;</script>
+<script>
+(() => {
+"use strict";
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const dkey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const hm = ms => { const d = new Date(ms); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const sum = (a, f) => a.reduce((s, x) => s + (Number(f(x)) || 0), 0);
+const fmt = n => Math.round(n).toLocaleString("ru-RU").replace(/ /g, " ");
+const DAY = 864e5;
+const daysBack = n => { const out = []; const now = new Date(); for (let i = n - 1; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); out.push(dkey(d)); } return out; };
+const dayLabel = k => { const [y, m, d] = k.split("-"); return `${d}.${m}`; };
+function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+async function sha(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join(""); }
+
+/* ---------- i18n ---------- */
+const LANGS = [["uz", "O'zbekcha"], ["ru", "Русский"], ["en", "English"], ["ky", "Кыргызча"]];
+let LANG = ls("tg_lang") || "uz";
+const LI = { ru: 0, en: 1, ky: 2 };
+/* Kalit — o'zbekcha matn. Qiymat — [ruscha, inglizcha, qirg'izcha] */
+const L = window.TG_DICT || {};
+function t(key, ...a) {
+  let s = key;
+  if (LANG !== "uz") { const tr = L[key]; if (tr && tr[LI[LANG]]) s = tr[LI[LANG]]; }
+  return s.replace(/\{(\d)\}/g, (_, i) => a[i] ?? "");
+}
+const WEEKDAYS = { uz: ["Yak", "Du", "Se", "Chor", "Pay", "Ju", "Sha"], ru: ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"], en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], ky: ["Жек", "Дүй", "Шей", "Шар", "Бей", "Жума", "Ише"] };
+const wd = k => WEEKDAYS[LANG][new Date(k + "T12:00").getDay()];
+
+const ROLES = { admin: "Administrator", kassir: "Sotuvchi · kassir", oshpaz: "Oshpaz", direktor: "Direktor" };
+const TABS = [
+  ["bosh", "Bosh sahifa", ["direktor", "admin"]],
+  ["kassa", "Kassa", ["kassir", "admin"]],
+  ["buyurtma", "Yangi buyurtma", ["kassir", "admin"]],
+  ["yakun", "Kun yakuni", ["kassir", "admin"]],
+  ["tandir", "Tandir", ["oshpaz", "admin"]],
+  ["buyurtmalar", "Buyurtmalar", ["oshpaz", "admin"]],
+  ["ombor", "Ombor", ["oshpaz", "admin"]],
+  ["oylik", "Oylik ish haqim", ["oshpaz", "admin"]],
+  ["nazorat", "Kassa nazorati", ["direktor", "admin"]],
+  ["analitika", "Analitika", ["oshpaz", "direktor", "admin"]],
+  ["jurnal", "Jurnal", ["direktor", "admin"]],
+  ["xarajat", "Kirim-chiqim", ["kassir", "direktor", "admin"]],
+  ["otin", "O'tin", ["oshpaz", "direktor", "admin"]],
+  ["xabarlar", "Xabarlar va avans", ["direktor", "admin"]],
+  ["xabar", "Direktorga xabar", ["kassir", "oshpaz"]],
+  ["sozlama", "Sozlamalar", ["admin"]],
+];
+const ITEMS = [["grill", "Tovuq grili"], ["lavash", "Lavash"], ["non", "Non"], ["sous", "Sous"]];
+const DEF = { prices: { grill: 450, lavash: 30, non: 25, sous: 20 }, cookRate: 30, sellerWage: 500, perTandoor: 25, durDefault: 25, orderLead: 40, lowStock: 5, woodUnit: "qop", woodLow: 3 };
+const ST = { new: ["Yangi", "new"], acc: ["Qabul qilindi", "acc"], ready: ["Tayyor", "ready"], given: ["Berildi", "done"] };
+
+/* ---------- state ---------- */
+const S = {
+  db: null, mcp: null, settings: null, rates: null, stock: null, logs: new Map(),
+  loaded: { settings: false, logs: false }, dbFail: false,
+  session: ls("tg_session"), cur: ls("tg_cur") || "KGS", tab: null,
+  cart: { grill: 0, lavash: 0, non: 0, sous: 0, orderId: null },
+  dur: null, view: null, viewRoot: null, jurnalDate: dkey(), range: 7,
+};
+const cfg = () => {
+  const s = S.settings || {};
+  return { ...DEF, ...s, prices: { ...DEF.prices, ...(s.prices || {}) } };
+};
+
+/* ---------- money ---------- */
+const CURS = ["KGS", "USD", "UZS"];
+function money(kgs, cur = S.cur) {
+  const r = S.rates;
+  if (cur === "KGS" || !r || !r.usdKgs) return fmt(kgs) + " KGS";
+  if (cur === "USD") return "$" + (kgs / r.usdKgs).toFixed(2);
+  return fmt(kgs * r.usdUzs / r.usdKgs) + " UZS";
+}
+const moneyAll = kgs => CURS.filter(c => c !== S.cur).map(c => money(kgs, c)).join(" · ");
+
+/* ---------- aggregation ---------- */
+const KEYS = ["sales", "orders", "wages", "checkins", "batches", "stockIn", "pickups", "messages", "expenses", "incomes", "woodIn", "woodUse", "rewards"];
+function collect(date) {
+  const o = {}; KEYS.forEach(k => o[k] = []);
+  for (const [id, l] of S.logs) {
+    if (date && l.date !== date) continue;
+    for (const k of KEYS) for (const x of (l[k] || [])) o[k].push({ ...x, date: l.date, by: l.role, doc: id });
+  }
+  for (const k of KEYS) o[k].sort((a, b) => a.t - b.t);
+  return o;
+}
+function orderStatus() {
+  const m = {};
+  for (const l of S.logs.values()) for (const [id, v] of Object.entries(l.orderStatus || {})) if (!m[id] || v.t > m[id].t) m[id] = v;
+  return m;
+}
+function decisions() {
+  const m = {};
+  for (const l of S.logs.values()) for (const [id, v] of Object.entries(l.decisions || {})) if (!m[id] || v.t > m[id].t) m[id] = v;
+  return m;
+}
+const EXP_CATS = ["Tovuq xaridi", "O'tin", "Lavash va non", "Sous va ziravorlar", "Ijara", "Kommunal (svet, gaz, suv)", "Transport", "Oshpaz ish haqi", "Boshqa"];
+const outQty = b => b.outQty ?? b.qty;
+function dayStats(date) {
+  const c = collect(date);
+  const done = c.batches.filter(b => b.doneAt);
+  const cooked = sum(done, outQty);
+  const sold = sum(c.sales, s => s.items.grill);
+  return {
+    c, cooked, sold, revenue: sum(c.sales, s => s.total),
+    cooking: c.batches.filter(b => !b.doneAt), cookingQty: sum(c.batches.filter(b => !b.doneAt), b => b.qty),
+    used: sum(c.batches, b => b.qty), stockIn: sum(c.stockIn, s => s.qty),
+    extras: { lavash: sum(c.sales, s => s.items.lavash), non: sum(c.sales, s => s.items.non), sous: sum(c.sales, s => s.items.sous) },
+    left: cooked - sold, checkin: c.checkins[0],
+    sellerWage: sum(c.wages.filter(w => w.who === "kassir"), w => w.amount),
+    pickups: sum(c.pickups, p => p.amount),
+  };
+}
+function cashState() {
+  const c = collect();
+  const sales = sum(c.sales, s => s.total);
+  const taken = sum(c.wages.filter(w => w.status === "taken"), w => w.amount);
+  const later = sum(c.wages.filter(w => w.status === "later"), w => w.amount);
+  const picked = sum(c.pickups, p => p.amount);
+  const dec = decisions();
+  const expK = sum(c.expenses.filter(e => e.fromKassa), e => e.amount);
+  const incK = sum(c.incomes.filter(e => e.toKassa), e => e.amount);
+  const avansK = sum(c.messages.filter(m => m.type === "avans" && dec[m.id]?.s === "paidKassa"), m => m.amount);
+  const rewK = sum(c.rewards.filter(r => r.fromKassa), r => r.amount);
+  const box = sales + incK - taken - picked - expK - avansK - rewK;
+  return { sales, taken, later, picked, expK, incK, avansK, rewK, box, net: box - later, c, dec };
+}
+const stockCount = () => (S.stock && typeof S.stock.count === "number") ? S.stock.count : 0;
+const woodCount = () => (S.wood && typeof S.wood.amount === "number") ? S.wood.amount : 0;
+
+/* ---------- writes ---------- */
+const chains = new Map();
+function mutateLog(docId, date, fn) {
+  const prev = chains.get(docId) || Promise.resolve();
+  const p = prev.then(async () => {
+    const cur = S.logs.get(docId);
+    const base = cur ? structuredClone(cur) : { date, role: docId.split("_")[1] };
+    fn(base);
+    S.logs.set(docId, base);
+    refresh();
+    await S.db.doc("log/" + docId).set(base);
+  }).catch(e => { console.error(e); toast(t("Saqlanmadi. Internetni tekshirib, qayta urinib ko'ring."), "err"); });
+  chains.set(docId, p);
+  return p;
+}
+const myDoc = () => dkey() + "_" + S.session.role;
+const mutateToday = fn => mutateLog(myDoc(), dkey(), fn);
+const push = (o, k, v) => { (o[k] = o[k] || []).push(v); };
+async function writeMeta(id, data) {
+  try { await S.db.doc("meta/" + id).set(data); } catch (e) { console.error(e); toast(t("Saqlanmadi. Internetni tekshirib, qayta urinib ko'ring."), "err"); throw e; }
+}
+async function changeWood(delta, note) {
+  S.wood = { amount: Math.round((woodCount() + delta) * 10) / 10, updatedAt: Date.now(), note: note || "" };
+  refresh();
+  await writeMeta("wood", S.wood);
+}
+async function changeStock(delta, note) {
+  const next = stockCount() + delta;
+  S.stock = { count: next, updatedAt: Date.now(), note: note || "" };
+  refresh();
+  await writeMeta("stock", S.stock);
+}
+
+/* ---------- toast / sound / alarm ---------- */
+function toast(msg, kind) {
+  const el = document.createElement("div"); el.className = "toast" + (kind === "err" ? " err" : ""); el.textContent = msg;
+  $("#toasts").appendChild(el); setTimeout(() => el.remove(), 4200);
+}
+let AC = null;
+document.addEventListener("pointerdown", () => { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); } catch (e) {} }, { capture: true });
+function beep(times = 3) {
+  if (!AC) return;
+  for (let i = 0; i < times; i++) {
+    const o = AC.createOscillator(), g = AC.createGain(); const tt = AC.currentTime + i * 0.35;
+    o.type = "square"; o.frequency.value = i % 2 ? 880 : 1175; g.gain.setValueAtTime(0.0001, tt);
+    g.gain.exponentialRampToValueAtTime(0.25, tt + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.28);
+    o.connect(g).connect(AC.destination); o.start(tt); o.stop(tt + 0.3);
+  }
+}
+/* Hamma eslatmalar: ekranda katta oyna + jiringlash (bosmaguncha 75 soniya) + tebranish */
+let alarmLoop = null; const alarmQueue = [];
+function alarm(title, text) {
+  try { navigator.vibrate && navigator.vibrate([400, 200, 400, 200, 400]); } catch (e) {}
+  try { if (window.Notification && Notification.permission === "granted") new Notification(title, { body: text }); } catch (e) {}
+  alarmQueue.push([title, text, Date.now()]);
+  let ov = $("#alarm");
+  if (!ov) { ov = document.createElement("div"); ov.id = "alarm"; ov.className = "alarm"; document.body.appendChild(ov); }
+  const [h, p] = alarmQueue[alarmQueue.length - 1];
+  const older = alarmQueue.slice(0, -1).reverse();
+  ov.innerHTML = `<div class="box" role="alertdialog" aria-labelledby="al-h"><div class="label">${esc(t("Eslatma"))}</div><h2 id="al-h"></h2><p id="al-p" style="margin:0;font-size:1.05rem"></p>
+    ${older.length ? `<div class="list small" style="text-align:left">${older.map(([a, b, tm]) => `<div class="li"><span class="t">${hm(tm)}</span><span style="flex:1">${esc(a)}: ${esc(b)}</span></div>`).join("")}</div>` : ""}
+    <button class="btn primary big" id="al-ok">${esc(t("Ko'rdim"))}</button></div>`;
+  $("#al-h", ov).textContent = h; $("#al-p", ov).textContent = p;
+  beep(4); clearInterval(alarmLoop); let n = 0;
+  alarmLoop = setInterval(() => { beep(4); try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (e) {} if (++n > 30) clearInterval(alarmLoop); }, 2500);
+  $("#al-ok", ov).onclick = () => { clearInterval(alarmLoop); alarmQueue.length = 0; ov.remove(); };
+}
+const alerted = new Set(ls("tg_alerted") || []);
+const once = key => { if (alerted.has(key)) return false; alerted.add(key); ls("tg_alerted", [...alerted].slice(-400)); return true; };
+const isCook = () => S.session && ["oshpaz", "admin"].includes(S.session.role);
+const isSeller = () => S.session && ["kassir", "admin"].includes(S.session.role);
+const isBoss = () => S.session && ["direktor", "admin"].includes(S.session.role);
+function checkAlarms() {
+  if (!S.session || !S.loaded.logs) return;
+  const now = Date.now();
+  if ((isCook() || isBoss()) && S.wood && S.wood.updatedAt && woodCount() <= cfg().woodLow && once(`wood:${dkey()}:${woodCount()}`)) {
+    alarm(t("O'tin kam qoldi"), t("Omborda {0} {1} o'tin qoldi. Yangi o'tin keltirish kerak.", woodCount(), t(cfg().woodUnit)));
+  }
+  if (isCook()) {
+    /* 1) tandir taymeri: 10 va 5 daqiqa qolganda, vaqt tugaganda */
+    for (const b of collect().batches.filter(b => !b.doneAt)) {
+      const end = b.t + b.dur * 60000, rem = end - now;
+      const marks = [[0, t("Vaqt tugadi! Tandirdan chiqaring"), t("{0} ta tovuq pishish vaqti tugadi (soat {1}). Darhol tekshiring.", b.qty, hm(end))],
+                     [5, t("5 daqiqa qoldi"), t("Tandirga qarang, kuymadimi? {0} ta tovuq soat {1} da tayyor bo'ladi.", b.qty, hm(end))],
+                     [10, t("10 daqiqa qoldi"), t("Tandirga qarang, kuymadimi? {0} ta tovuq soat {1} da tayyor bo'ladi.", b.qty, hm(end))]];
+      for (const [m, title, txt] of marks) {
+        if (rem <= m * 60000 && !alerted.has(b.id + ":" + m)) {
+          marks.forEach(([mm]) => { if (mm >= m) once(b.id + ":" + mm); });
+          if (!(m === 0 && rem < -10 * 60000)) alarm(title, txt);
+          break;
+        }
+      }
+    }
+    const c = cfg(), today = dkey(), ds = dayStats(today), st = orderStatus();
+    const avail = Math.max(0, ds.left);
+    /* 2) buyurtma vaqtidan 40 daqiqa oldin */
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    for (const o of ds.c.orders) {
+      if (["ready", "given"].includes(st[o.id]?.s)) continue;
+      const [h, m] = o.ready.split(":").map(Number); const at = d0.getTime() + (h * 60 + m) * 60000;
+      if (now >= at - c.orderLead * 60000 && now < at + 30 * 60000 && once("lead:" + o.id)) {
+        alarm(t("Buyurtma uchun tovuq pishiring"), t("Soat {0} ga {1} ta grill kerak ({2} daqiqa qoldi). Sotish uchun tayyor turganlar: {3} ta. Bu buyurtma uchun alohida pishiring.", o.ready, o.qty, Math.max(0, Math.round((at - now) / 60000)), avail) + (o.note ? " · " + o.note : ""));
+      }
+    }
+    /* 3) sotish uchun grill kam qoldi */
+    if (ds.cooked > 0 && avail + ds.cookingQty <= c.lowStock && once(`low:${today}:${ds.cooked}`)) {
+      alarm(t("Sotish uchun grill kam qoldi"), t("Vitrinada {0} ta grill qoldi, tandirda {1} ta. Yangi partiya qo'ying.", avail, ds.cookingQty));
+    }
+    /* 4) omborda muzlatilgan tovuq kam */
+    if (S.stock && S.stock.updatedAt && stockCount() < c.perTandoor && once(`frozen:${today}:${stockCount()}`)) {
+      alarm(t("Omborda tovuq kam"), t("Omborda {0} ta muzlatilgan tovuq qoldi. Bitta tandirga {1} ta kerak.", stockCount(), c.perTandoor));
+    }
+  }
+}
+
+/* ---------- live notifications on data change ---------- */
+let seenOrders = null, seenReady = null, seenMsgs = null, seenDec = null, seenRew = null;
+function watchChanges() {
+  if (!S.session || !S.loaded.logs) return;
+  const c = collect(dkey()); const st = orderStatus();
+  const ids = new Set(c.orders.map(o => o.id));
+  const readyIds = new Set(c.orders.filter(o => st[o.id]?.s === "ready").map(o => o.id));
+  if (seenOrders && isCook()) {
+    for (const o of c.orders) if (!seenOrders.has(o.id) && S.session.role !== "admin" || (!seenOrders.has(o.id) && S.session.role === "admin")) {
+      if (once("new:" + o.id)) alarm(t("Yangi buyurtma"), t("{0} ta grill, soat {1} ga tayyor bo'lsin.", o.qty, o.ready) + (o.note ? " · " + o.note : ""));
+    }
+  }
+  if (seenReady && isSeller()) {
+    for (const o of c.orders) if (readyIds.has(o.id) && !seenReady.has(o.id) && once("rdy:" + o.id)) alarm(t("Buyurtma tayyor"), t("{0} ta grill (soat {1}) tayyor. Kassaga olib, mijozga bering.", o.qty, o.ready));
+  }
+  const all = collect(); const dec = decisions();
+  const msgIds = new Set(all.messages.map(m => m.id));
+  if (seenMsgs && isBoss()) for (const m of all.messages) if (!seenMsgs.has(m.id) && once("msg:" + m.id)) {
+    alarm(m.type === "avans" ? t("Avans so'rovi") : t("Yangi xabar"), `${t(ROLES[m.by] || m.by)}: ` + (m.type === "avans" ? money(m.amount) + (m.text ? " · " + m.text : "") : m.text));
+  }
+  const mine = all.messages.filter(m => m.by === S.session.role);
+  const decIds = new Set(mine.filter(m => dec[m.id]).map(m => m.id + dec[m.id].s));
+  if (seenDec) for (const m of mine) { const d = dec[m.id]; if (d && !seenDec.has(m.id + d.s) && once("dec:" + m.id + d.s)) alarm(t("Direktor javob berdi"), decText(m, d)); }
+  const rewIds = new Set(all.rewards.map(r => r.id));
+  if (seenRew) for (const r of all.rewards) if (r.who === S.session.role && !seenRew.has(r.id) && once("rew:" + r.id)) alarm(r.kind === "bonus" ? t("Sizga bonus berildi") : t("Sizga premiya berildi"), money(r.amount) + (r.note ? " · " + r.note : ""));
+  seenOrders = ids; seenReady = readyIds; seenMsgs = msgIds; seenDec = decIds; seenRew = rewIds;
+}
+
+/* ---------- rates via connector (owner/admin) ---------- */
+async function refreshRates(manual) {
+  if (!S.mcp) { if (manual) toast(t("Avtomatik kurs bu qurilmada mavjud emas. Kursni qo'lda kiriting."), "err"); return; }
+  try {
+    const get = async sym => {
+      const r = await S.mcp.callTool("Twelve Data", "currency_conversion", { symbol: sym }, { cache: false });
+      const p = r.payload; const txt = typeof p === "string" ? p : (p && (p.result || p.rate)) ? String(p.result ?? p.rate) : JSON.stringify(p);
+      const m = txt.match(/;([\d.]+);/) || txt.match(/([\d]+\.[\d]+)/); if (!m) throw new Error("parse");
+      return Number(m[1]);
+    };
+    const usdKgs = await get("USD/KGS"), usdUzs = await get("USD/UZS");
+    if (!(usdKgs > 0 && usdUzs > 0)) throw new Error("bad");
+    S.rates = { usdKgs, usdUzs, updatedAt: Date.now(), source: "Twelve Data" }; refresh();
+    await writeMeta("rates", S.rates);
+    if (manual) toast(t("Kurs yangilandi"));
+  } catch (e) { console.warn(e); if (manual) toast(t("Kursni olib bo'lmadi. Qo'lda kiriting."), "err"); }
+}
+
+/* ---------- shell ---------- */
+const LOGO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--accent-ink)"><path d="M4 20h16"/><path d="M6 20c0-6 2.5-10 6-10s6 4 6 10"/><path d="M9 6c0-1 1-1.5 1-2.5M13 6c0-1 1-1.5 1-2.5"/></svg>`;
+const langSelect = id => `<select id="${id}" class="langsel" aria-label="Til / Язык / Language">${LANGS.map(([k, n]) => `<option value="${k}"${k === LANG ? " selected" : ""}>${n}</option>`).join("")}</select>`;
+function bindLang(id, rerender) { const s = $("#" + id); if (s) s.onchange = () => { LANG = s.value; ls("tg_lang", LANG); document.documentElement.lang = LANG; rerender(); }; }
+function renderLogin(msg) {
+  S.view = null; S.viewRoot = null;
+  $("#app").innerHTML = `<div class="wrap login"><form class="card" id="lf" autocomplete="on">
+    <div class="row between"><div class="row"><div class="mark">${LOGO}</div><div><h1 style="font-size:1.15rem">Talas Grill</h1><div class="muted small">${esc(t("Grilxona hisob-kitob paneli"))}${DEMO ? " · DEMO" : ""}</div></div></div>${langSelect("lg-lang")}</div>
+    <div class="field"><label class="label" for="lg-u">${esc(t("Login"))}</label><input id="lg-u" autocomplete="username" required placeholder="${esc(t("masalan: kassir"))}"></div>
+    <div class="field"><label class="label" for="lg-p">${esc(t("Parol"))}</label><input id="lg-p" type="password" autocomplete="current-password" required></div>
+    <div class="err" id="lg-e" role="alert"></div>
+    <button class="btn primary big" id="lg-b">${esc(t("Kirish"))}</button>
+    <div class="hint muted" id="lg-h"></div></form></div>`;
+  if (msg) $("#lg-e").textContent = msg;
+  bindLang("lg-lang", () => renderLogin(msg));
+  updLoginHint();
+  $("#lf").onsubmit = async e => {
+    e.preventDefault();
+    const u = $("#lg-u").value.trim().toLowerCase(), p = $("#lg-p").value;
+    if (!S.settings) { $("#lg-e").textContent = t("Tizim hali yuklanmadi. Bir necha soniya kuting."); return; }
+    const rec = (S.settings.users || {})[u];
+    if (!rec || (await sha(rec.salt + ":" + p)) !== rec.hash) { $("#lg-e").textContent = t("Login yoki parol noto'g'ri."); return; }
+    S.session = { login: u, role: rec.role, name: rec.name || u, at: Date.now() };
+    ls("tg_session", S.session); seenOrders = seenReady = seenMsgs = seenDec = seenRew = null; S.tab = null; renderShell();
+  };
+}
+function updLoginHint() {
+  const h = $("#lg-h"); if (!h) return;
+  if (S.dbFail) h.textContent = t("Ma'lumotlar bazasiga ulanib bo'lmadi. claude.ai hisobingizga kirganingizni tekshiring va sahifani qayta oching.");
+  else if (!S.loaded.settings) h.textContent = t("Ma'lumotlar bazasiga ulanmoqda…");
+  else if (!S.settings) h.textContent = t("Tizim hali sozlanmagan: loginlar bazaga yozilmagan.");
+  else if (DEMO) { h.innerHTML = `<b>${E("Demo versiya")}</b> · ${E("Ma'lumotlar namuna uchun to'qilgan.")}<br>${E("Loginlar")}: <b>admin</b>, <b>kassir</b>, <b>oshpaz</b>, <b>direktor</b> · ${E("Parol")}: <b>demo</b><br><button type="button" class="btn sm" id="demo-reset" style="margin-top:8px">${E("Demo ma'lumotlarini qayta tiklash")}</button>`; $("#demo-reset").onclick = () => S.db && S.db.reset && S.db.reset(); }
+  else h.textContent = t("4 ta login bor: admin, kassir, oshpaz, direktor. Parolni administratordan oling.");
+}
+function renderShell() {
+  const role = S.session.role;
+  const tabs = TABS.filter(x => x[2].includes(role));
+  if (!S.tab || !tabs.find(x => x[0] === S.tab)) { const saved = ls("tg_tab_" + role); S.tab = tabs.find(x => x[0] === saved) ? saved : tabs[0][0]; }
+  $("#app").innerHTML = `<header class="top"><div class="wrap">
+    <div class="toprow">
+      <div class="brand"><div class="mark">${LOGO}</div><div style="min-width:0"><h1>Talas Grill</h1><div class="who"></div></div></div>
+      <div class="rates" id="rates"></div>
+      <div class="seg" role="group" aria-label="${esc(t("Valyuta"))}">${CURS.map(c => `<button data-cur="${c}" aria-pressed="${c === S.cur}">${c}</button>`).join("")}</div>
+      ${langSelect("hd-lang")}
+      <span class="clock" id="clock"></span>
+      <button class="btn sm" id="logout">${esc(t("Chiqish"))}</button>
+    </div>
+    <nav class="tabs" role="tablist">${tabs.map(x => `<button role="tab" data-tab="${x[0]}" aria-selected="${x[0] === S.tab}">${esc(t(x[1]))}</button>`).join("")}</nav>
+  </div></header><main class="wrap" id="main"></main>`;
+  $(".who").textContent = `${t(ROLES[role])} · ${S.session.login}`;
+  $$("[data-cur]").forEach(b => b.onclick = () => { S.cur = b.dataset.cur; ls("tg_cur", S.cur); $$("[data-cur]").forEach(x => x.setAttribute("aria-pressed", x.dataset.cur === S.cur)); refresh(); });
+  $$("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; ls("tg_tab_" + role, S.tab); $$("[data-tab]").forEach(x => x.setAttribute("aria-selected", x.dataset.tab === S.tab)); mountView(); });
+  $("#logout").onclick = () => { ls("tg_session", null); S.session = null; renderLogin(); };
+  bindLang("hd-lang", renderShell);
+  mountView(); tick();
+}
+function mountView() {
+  const v = VIEWS[S.tab]; const main = $("#main"); if (!v || !main) return;
+  main.innerHTML = ""; const root = document.createElement("div"); main.appendChild(root);
+  root.innerHTML = v.html(); S.view = v; S.viewRoot = root; v.bind && v.bind(root); refresh();
+}
+function refresh() {
+  if (!S.session) { updLoginHint(); return; }
+  const r = $("#rates");
+  if (r) {
+    if (S.rates && S.rates.usdKgs) {
+      const age = Date.now() - (S.rates.updatedAt || 0);
+      r.innerHTML = `<span class="rate">1 USD = <b>${S.rates.usdKgs.toFixed(2)}</b> KGS</span><span class="rate">1 USD = <b>${fmt(S.rates.usdUzs)}</b> UZS</span><span class="rate">1 KGS = <b>${(S.rates.usdUzs / S.rates.usdKgs).toFixed(1)}</b> UZS</span><span class="muted small">${age < DAY ? hm(S.rates.updatedAt) : dayLabel(dkey(new Date(S.rates.updatedAt)))}</span>`;
+    } else r.innerHTML = `<span class="rate muted">${esc(t("Kurs kiritilmagan"))}</span>`;
+  }
+  if (S.view && S.viewRoot && S.viewRoot.isConnected) S.view.update(S.viewRoot);
+  watchChanges();
+}
+function tick() {
+  const c = $("#clock"); if (c) { const d = new Date(); c.textContent = hm(d) + ":" + pad(d.getSeconds()); }
+  $$("[data-timer]").forEach(el => updTimer(el));
+  checkAlarms();
+}
+setInterval(tick, 1000);
+
+/* ---------- shared fragments ---------- */
+const kpi = (label, value, sub, cls = "") => `<div class="card kpi c3 ${cls}"><div class="label">${label}</div><div class="v">${value}</div><div class="s">${sub || "&nbsp;"}</div></div>`;
+function orderChip(id, st) { const s = st[id]?.s || "new"; const [tx, c] = ST[s] || ST.new; return `<span class="chip ${c}">${esc(t(tx))}</span>`; }
+function reconCard(ds) {
+  const left = ds.left;
+  const [cls, msg] = left === 0 ? ["stripe-ok", `<span class="chip ready">${esc(t("To'g'ri"))}</span> ${esc(t("Pishirilgan va sotilgan grillar soni teng."))}`]
+    : left > 0 ? ["stripe-warn", `<span class="chip warn">${esc(t("{0} ta qoldi", left))}</span> ${esc(t("Pishgan, lekin hali sotilmagan grillar (vitrinada bo'lishi kerak)."))}`]
+    : ["stripe-bad", `<span class="chip bad">${esc(t("{0} ta ortiqcha", -left))}</span> ${esc(t("Sotilgan grillar pishirilganidan ko'p. Tekshiring."))}`];
+  return `<div class="card ${cls}"><div class="card-h"><h2>${esc(t("Bugungi hisob tekshiruvi"))}</h2></div>
+    <div class="row" style="gap:24px"><div><div class="label">${esc(t("Oshpaz pishirdi"))}</div><div class="kpi"><div class="v">${ds.cooked}</div></div></div>
+    <div><div class="label">${esc(t("Sotuvchi sotdi"))}</div><div class="kpi"><div class="v">${ds.sold}</div></div></div>
+    <div><div class="label">${esc(t("Farq"))}</div><div class="kpi"><div class="v">${left > 0 ? "+" : ""}${left}</div></div></div></div>
+    <div class="small">${msg}</div></div>`;
+}
+const itemsText = it => ITEMS.filter(([k]) => it[k]).map(([k, n]) => `${t(n)} ×${it[k]}`).join(", ") || "—";
+function updTimer(el) {
+  const b = collect().batches.find(x => x.id === el.dataset.timer); if (!b) return;
+  const end = b.t + b.dur * 60000, rem = end - Date.now(), total = b.dur * 60000;
+  const frac = Math.max(0, Math.min(1, 1 - rem / total));
+  const mm = Math.floor(Math.abs(rem) / 60000), ss = Math.floor(Math.abs(rem) % 60000 / 1000);
+  const tx = $("text", el); if (tx) tx.textContent = (rem < 0 ? "+" : "") + pad(mm) + ":" + pad(ss);
+  const arc = $(".arc", el); if (arc) arc.setAttribute("stroke-dasharray", `${(frac * 263.9).toFixed(1)} 263.9`);
+  const card = el.closest(".batch"); if (card) { card.classList.toggle("hot", rem <= 10 * 60000 && rem > 0); card.classList.toggle("over", rem <= 0); }
+}
+function ringSvg(id) {
+  return `<svg class="ring" viewBox="0 0 96 96" data-timer="${id}" aria-label="${esc(t("Qolgan vaqt"))}"><circle cx="48" cy="48" r="42" fill="none" stroke="var(--line)" stroke-width="8"/><circle class="arc" cx="48" cy="48" r="42" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 48 48)" stroke-dasharray="0 263.9"/><text x="48" y="54" text-anchor="middle" font-size="17" fill="var(--ink)">--:--</text></svg>`;
+}
+function cookingList(cooking, canFinish) {
+  if (!cooking.length) return `<div class="empty">${esc(t("Hozir tandirda tovuq yo'q."))}</div>`;
+  return cooking.map(b => `<div class="batch">${ringSvg(b.id)}<div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+     <div class="row between"><b style="font-size:1.1rem">${esc(t("{0} ta tovuq", b.qty))}</b><span class="muted small">${esc(t("{0} daqiqa", b.dur))}</span></div>
+     <div class="small">${esc(t("Qo'yildi"))}: <b>${hm(b.t)}</b> · ${esc(t("Tayyor bo'ladi"))}: <b>${hm(b.t + b.dur * 60000)}</b></div>
+     ${canFinish ? `<div class="row"><label class="small muted" for="out-${b.id}">${esc(t("Chiqqan soni"))}</label><input id="out-${b.id}" type="number" min="0" max="${b.qty}" value="${b.qty}" style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)"><button class="btn ok sm" data-finish="${b.id}" data-doc="${b.doc}">${esc(t("Tayyor, chiqardim"))}</button></div>` : ""}
+   </div></div>`).join("");
+}
+function barChart(days, series, opts = {}) {
+  const W = 640, H = 220, Lp = 40, R = 8, T = 12, B = 34;
+  const max = Math.max(1, ...days.map(d => Math.max(...series.map(s => s.get(d)))));
+  const step = Math.pow(10, Math.floor(Math.log10(max))); const nice = Math.ceil(max / step) * step;
+  const cw = (W - Lp - R) / days.length, bw = Math.max(3, Math.min(18, (cw - 6) / series.length));
+  const y = v => T + (H - T - B) * (1 - v / nice);
+  let g = "";
+  for (let i = 0; i <= 4; i++) { const v = nice * i / 4; g += `<line x1="${Lp}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${Lp - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${fmt(v)}</text>`; }
+  days.forEach((d, i) => {
+    const cx = Lp + cw * i + cw / 2, x0 = cx - (bw * series.length) / 2;
+    series.forEach((s, j) => { const v = s.get(d); g += `<rect x="${(x0 + j * bw).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw - 1).toFixed(1)}" height="${(y(0) - y(v)).toFixed(1)}" rx="2" fill="${s.color}"><title>${dayLabel(d)} · ${esc(s.name)}: ${fmt(v)}</title></rect>`; });
+    if (days.length <= 14 || i % Math.ceil(days.length / 10) === 0) g += `<text x="${cx}" y="${H - B + 14}" text-anchor="middle" font-size="10" fill="var(--muted)">${dayLabel(d)}</text>` + (days.length <= 14 ? `<text x="${cx}" y="${H - B + 26}" text-anchor="middle" font-size="9" fill="var(--muted)">${wd(d)}</text>` : "");
+  });
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label || "")}">${g}</svg></div><div class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join("")}</div>`;
+}
+const E = s => esc(t(s));
+function decText(m, d) {
+  if (!d) return t("Javob kutilmoqda");
+  if (d.s === "rejected") return t("Rad etildi") + (d.note ? " · " + d.note : "");
+  if (d.s === "paidKassa") return t("Tasdiqlandi, kassadan berildi") + (d.note ? " · " + d.note : "");
+  if (d.s === "paidHand") return t("Tasdiqlandi, direktor qo'ldan berdi") + (d.note ? " · " + d.note : "");
+  return t("O'qildi") + (d.note ? " · " + d.note : "");
+}
+function decChip(d) {
+  if (!d) return `<span class="chip new">${E("Javob kutilmoqda")}</span>`;
+  if (d.s === "rejected") return `<span class="chip bad">${E("Rad etildi")}</span>`;
+  if (d.s === "seen") return `<span class="chip done">${E("O'qildi")}</span>`;
+  return `<span class="chip ready">${E("Tasdiqlandi")}</span>`;
+}
+
+/* ---------- views ---------- */
+const VIEWS = {};
+
+/* KASSA */
+VIEWS.kassa = {
+  html: () => `<div class="grid">
+    <div class="card c7"><div class="card-h"><h2>${E("Sotuv")}</h2><span id="k-order" class="small"></span></div>
+      <div id="pos">${ITEMS.map(([k, n]) => `<div class="pos-item"><div><div class="nm">${E(n)}</div><div class="muted small" data-price="${k}"></div></div>
+        <div class="step"><button type="button" data-dec="${k}" aria-label="−">−</button><input id="q-${k}" inputmode="numeric" data-q="${k}" aria-label="${E(n)}" value="0"><button type="button" data-inc="${k}" aria-label="+">+</button></div>
+        <div class="lt" data-lt="${k}"></div></div>`).join("")}</div>
+      <div class="total"><span class="label">${E("Jami")}</span><span class="v" id="k-total"></span></div>
+      <div class="conv muted small" id="k-conv"></div>
+      <div class="err" id="k-err"></div>
+      <div class="row"><button class="btn" id="k-clear" style="flex:1">${E("Tozalash")}</button><button class="btn primary" id="k-sell" style="flex:3">${E("Sotildi — saqlash")}</button></div>
+    </div>
+    <div class="c5" style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="card stripe-acc"><div class="label">${E("Sotishga tayyor grillar")}</div><div class="kpi"><div class="v" id="k-avail"></div></div><div class="small" id="k-cooking"></div></div>
+      <div class="card"><div class="card-h"><h2>${E("Tayyor buyurtmalar")}</h2></div><div class="list" id="k-ready"></div></div>
+      <div class="card"><div class="card-h"><h2>${E("Bugungi sotuvlar")}</h2><b id="k-rev"></b></div><div class="list" id="k-sales"></div></div>
+    </div></div>`,
+  bind(root) {
+    const setQ = (k, v) => { S.cart[k] = Math.max(0, Math.min(999, Math.round(Number(v) || 0))); this.updCart(root); };
+    $$("[data-inc]", root).forEach(b => b.onclick = () => setQ(b.dataset.inc, S.cart[b.dataset.inc] + 1));
+    $$("[data-dec]", root).forEach(b => b.onclick = () => setQ(b.dataset.dec, S.cart[b.dataset.dec] - 1));
+    $$("[data-q]", root).forEach(i => i.onchange = () => setQ(i.dataset.q, i.value));
+    $("#k-clear", root).onclick = () => { S.cart = { grill: 0, lavash: 0, non: 0, sous: 0, orderId: null }; this.updCart(root); };
+    $("#k-sell", root).onclick = async () => {
+      const p = cfg().prices; const items = {}; ITEMS.forEach(([k]) => items[k] = S.cart[k]);
+      const total = sum(ITEMS, ([k]) => items[k] * p[k]);
+      if (!total) { $("#k-err", root).textContent = t("Kamida bitta mahsulot tanlang."); return; }
+      $("#k-err", root).textContent = "";
+      const sale = { id: uid(), t: Date.now(), items, prices: { ...p }, total };
+      const oid = S.cart.orderId; if (oid) sale.orderId = oid;
+      S.cart = { grill: 0, lavash: 0, non: 0, sous: 0, orderId: null }; this.updCart(root);
+      await mutateToday(l => { push(l, "sales", sale); if (oid) (l.orderStatus = l.orderStatus || {})[oid] = { s: "given", t: Date.now() }; });
+      toast(t("Saqlandi: {0}", money(total)));
+    };
+    root.addEventListener("click", e => {
+      const b = e.target.closest("[data-sellorder]"); if (!b) return;
+      const o = collect(dkey()).orders.find(x => x.id === b.dataset.sellorder); if (!o) return;
+      S.cart = { grill: o.qty, lavash: 0, non: 0, sous: 0, orderId: o.id }; this.updCart(root); $("#q-lavash", root).focus();
+    });
+    this.updCart(root);
+  },
+  updCart(root) {
+    const p = cfg().prices; let tot = 0;
+    ITEMS.forEach(([k]) => { const q = S.cart[k]; tot += q * p[k]; const i = $(`[data-q="${k}"]`, root); if (i && document.activeElement !== i) i.value = q; const lt = $(`[data-lt="${k}"]`, root); if (lt) lt.textContent = q ? money(q * p[k]) : ""; const pr = $(`[data-price="${k}"]`, root); if (pr) pr.textContent = t("{0} dan", money(p[k])); });
+    $("#k-total", root).textContent = money(tot);
+    $("#k-conv", root).textContent = tot ? "≈ " + moneyAll(tot) : "";
+    const o = S.cart.orderId ? collect().orders.find(x => x.id === S.cart.orderId) : null;
+    $("#k-order", root).innerHTML = o ? `<span class="chip acc">${esc(t("Buyurtma: {0} ta · {1}", o.qty, o.ready))}</span>` : "";
+  },
+  update(root) {
+    this.updCart(root);
+    const ds = dayStats(dkey()), st = orderStatus();
+    $("#k-avail", root).textContent = t("{0} ta", Math.max(0, ds.left));
+    $("#k-cooking", root).innerHTML = ds.cooking.length ? ds.cooking.map(b => esc(t("Tandirda {0} ta · tayyor bo'ladi {1}", b.qty, hm(b.t + b.dur * 60000)))).join("<br>") : `<span class="muted">${E("Hozir tandirda tovuq yo'q.")}</span>`;
+    const ready = ds.c.orders.filter(o => st[o.id]?.s === "ready");
+    $("#k-ready", root).innerHTML = ready.length ? ready.map(o => `<div class="li"><span><b>${esc(t("{0} ta", o.qty))}</b> · ${esc(o.ready)}${o.note ? ` · <span class="muted">${esc(o.note)}</span>` : ""}</span><button class="btn sm primary" data-sellorder="${o.id}">${E("Kassaga olish")}</button></div>`).join("") : `<div class="empty">${E("Tayyor buyurtma yo'q.")}</div>`;
+    $("#k-rev", root).textContent = money(ds.revenue);
+    $("#k-sales", root).innerHTML = ds.c.sales.length ? ds.c.sales.slice().reverse().slice(0, 40).map(s => `<div class="li"><span class="t">${hm(s.t)}</span><span style="flex:1;min-width:0">${esc(itemsText(s.items))}</span><b>${money(s.total)}</b></div>`).join("") : `<div class="empty">${E("Bugun hali sotuv yo'q. Chapdan mahsulot tanlab, \"Sotildi\" tugmasini bosing.")}</div>`;
+  },
+};
+
+/* YANGI BUYURTMA */
+VIEWS.buyurtma = {
+  html: () => `<div class="grid">
+    <form class="card c5" id="o-form" novalidate><h2>${E("Oshpazga buyurtma")}</h2>
+      <p class="muted small" style="margin:0">${E("Soni va tayyor bo'lish vaqti ikkalasi ham yozilmasa, so'rov oshpazga yuborilmaydi.")}</p>
+      <div class="row"><div class="field"><label class="label" for="o-qty">${E("Nechta grill")}</label><input id="o-qty" type="number" min="1" max="200" inputmode="numeric" placeholder="8"></div>
+      <div class="field"><label class="label" for="o-time">${E("Soat nechada tayyor")}</label><input id="o-time" type="time"></div></div>
+      <div class="field"><label class="label" for="o-note">${E("Izoh (ixtiyoriy)")}</label><input id="o-note" maxlength="120"></div>
+      <div class="err" id="o-err" role="alert"></div>
+      <button class="btn primary big">${E("Oshpazga yuborish")}</button></form>
+    <div class="card c7"><div class="card-h"><h2>${E("Bugungi buyurtmalar")}</h2><span class="muted small" id="o-sum"></span></div><div class="list" id="o-list"></div></div></div>`,
+  bind(root) {
+    $("#o-form", root).onsubmit = async e => {
+      e.preventDefault();
+      const qty = Math.round(Number($("#o-qty", root).value)), time = $("#o-time", root).value, note = $("#o-note", root).value.trim();
+      const noQ = !(qty >= 1), noT = !/^\d{2}:\d{2}$/.test(time);
+      if (noQ || noT) { $("#o-err", root).textContent = noQ && noT ? t("So'rov yuborilmadi: grillar sonini va tayyor bo'lish vaqtini kiriting.") : noQ ? t("So'rov yuborilmadi: grillar sonini kiriting.") : t("So'rov yuborilmadi: tayyor bo'lish vaqtini kiriting."); return; }
+      $("#o-err", root).textContent = "";
+      await mutateToday(l => push(l, "orders", { id: uid(), t: Date.now(), qty, ready: time, note }));
+      $("#o-qty", root).value = ""; $("#o-time", root).value = ""; $("#o-note", root).value = "";
+      toast(t("Oshpazga yuborildi: {0} ta, soat {1}", qty, time));
+    };
+  },
+  update(root) {
+    const c = collect(dkey()), st = orderStatus();
+    const os = c.orders.slice().sort((a, b) => a.ready.localeCompare(b.ready));
+    $("#o-sum", root).textContent = os.length ? t("{0} ta buyurtma · {1} ta grill", os.length, sum(os, o => o.qty)) : "";
+    $("#o-list", root).innerHTML = os.length ? os.map(o => `<div class="li"><span class="t">${esc(o.ready)}</span><span style="flex:1;min-width:0"><b>${esc(t("{0} ta grill", o.qty))}</b>${o.note ? ` · <span class="muted">${esc(o.note)}</span>` : ""}<br><span class="muted small">${esc(t("Yuborildi {0}", hm(o.t)))}</span></span>${orderChip(o.id, st)}</div>`).join("") : `<div class="empty">${E("Bugun buyurtma yo'q.")}</div>`;
+  },
+};
+
+/* KUN YAKUNI */
+VIEWS.yakun = {
+  html: () => `<div class="grid">
+    <div class="card c4 stripe-acc"><h2>${E("Ishga kelish")}</h2><div id="y-in"></div></div>
+    <div class="c8" id="y-recon"></div>
+    <div class="card c6"><h2>${E("Kunlik oylik")}</h2><div id="y-wage"></div></div>
+    <div class="card c6"><div class="card-h"><h2>${E("Keyin olinadigan oyliklar")}</h2></div><div class="list" id="y-later"></div></div>
+    <div class="card c12"><h2>${E("Bugungi kassa")}</h2><div class="tbl-wrap"><table><tbody id="y-sum"></tbody></table></div></div></div>`,
+  bind(root) {
+    root.addEventListener("click", async e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.id === "y-checkin") { await mutateToday(l => push(l, "checkins", { id: uid(), t: Date.now() })); toast(t("Kelgan vaqtingiz yozildi")); }
+      if (b.dataset.wage) { const amount = cfg().sellerWage; await mutateToday(l => push(l, "wages", { id: uid(), t: Date.now(), who: "kassir", amount, status: b.dataset.wage, takenAt: b.dataset.wage === "taken" ? Date.now() : null })); toast(b.dataset.wage === "taken" ? t("Oylik olindi: {0}", money(amount)) : t("Oylik keyinga yozildi")); }
+      if (b.dataset.takelater) { const [doc, id] = b.dataset.takelater.split("|"); const l = S.logs.get(doc); if (!l) return; await mutateLog(doc, l.date, x => { const w = (x.wages || []).find(w => w.id === id); if (w) { w.status = "taken"; w.takenAt = Date.now(); } }); toast(t("Oylik olindi deb belgilandi")); }
+    });
+  },
+  update(root) {
+    const ds = dayStats(dkey()), cv = cfg();
+    $("#y-in", root).innerHTML = ds.checkin ? `<div class="kpi"><div class="v">${hm(ds.checkin.t)}</div><div class="s">${E("Bugun ishga keldingiz")}</div></div>` : `<p class="muted small" style="margin:0">${E("Ishga kelganingizni belgilang. Direktor vaqtni ko'radi.")}</p><button class="btn primary big" id="y-checkin">${E("Ishga keldim")}</button>`;
+    $("#y-recon", root).innerHTML = reconCard(ds);
+    const todayWage = ds.c.wages.filter(w => w.who === "kassir");
+    $("#y-wage", root).innerHTML = todayWage.length ? todayWage.map(w => `<div class="row between"><span>${E("Bugungi oylik")} <b>${money(w.amount)}</b></span><span class="chip ${w.status === "taken" ? "ready" : "warn"}">${w.status === "taken" ? E("Oldim") : E("Keyin olaman")}</span></div>`).join("") + `<p class="muted small" style="margin:0">${E("Oylik kassadan ayirildi.")}</p>`
+      : `<div class="kpi"><div class="v">${money(cv.sellerWage)}</div><div class="s">≈ ${moneyAll(cv.sellerWage)}</div></div><div class="row"><button class="btn ok" data-wage="taken" style="flex:1">${E("Oldim")}</button><button class="btn" data-wage="later" style="flex:1">${E("Keyin olaman")}</button></div><p class="muted small" style="margin:0">${E("Ikkala holatda ham summa kassadan minus bo'ladi.")}</p>`;
+    const later = collect().wages.filter(w => w.status === "later" && w.who === "kassir");
+    $("#y-later", root).innerHTML = later.length ? later.map(w => `<div class="li"><span>${dayLabel(w.date)} · <b>${money(w.amount)}</b></span><button class="btn sm" data-takelater="${w.doc}|${w.id}">${E("Endi oldim")}</button></div>`).join("") : `<div class="empty">${E("Qarz yo'q.")}</div>`;
+    const cs = cashState();
+    $("#y-sum", root).innerHTML = `<tr><td>${E("Sotilgan grillar")}</td><td>${esc(t("{0} ta", ds.sold))}</td></tr><tr><td>${E("Lavash")} / ${E("Non")} / ${E("Sous")}</td><td>${ds.extras.lavash} / ${ds.extras.non} / ${ds.extras.sous}</td></tr><tr><td>${E("Bugungi tushum")}</td><td><b>${money(ds.revenue)}</b></td></tr><tr><td>${E("Bugungi sotuvchi oyligi")}</td><td>−${money(ds.sellerWage)}</td></tr><tr><td>${E("Direktor olib ketdi (bugun)")}</td><td>−${money(ds.pickups)}</td></tr><tr><td><b>${E("Kassada hozir naqd")}</b></td><td><b>${money(cs.box)}</b></td></tr>`;
+  },
+};
+
+/* TANDIR */
+VIEWS.tandir = {
+  html: () => `<div class="grid">
+    <div class="card c5"><h2>${E("Tandirga qo'yish")}</h2>
+      <div class="row"><div class="field"><label class="label" for="t-qty">${E("Tovuq soni")}</label><input id="t-qty" type="number" min="1" max="60" inputmode="numeric"></div>
+      <div class="field"><span class="label">${E("Muzlatilgan tovuq omborda")}</span><div class="kpi"><div class="v" id="t-stock" style="font-size:1.3rem;padding-top:6px"></div></div></div></div>
+      <div class="field"><span class="label">${E("Pishish vaqti (daqiqa)")}</span><div class="dur" id="t-dur" role="group">${[20,21,22,23,24,25,26,27,28,29,30].map(m => `<button type="button" data-m="${m}">${m}</button>`).join("")}</div></div>
+      <div class="err" id="t-err" role="alert"></div>
+      <button class="btn primary big" id="t-start">${E("Tovuqni tandirga qo'ydim")}</button>
+      <p class="muted small" style="margin:0">${E("Bosganingizda taymer ishga tushadi. 10 va 5 daqiqa qolganda ovozli eslatma chiqadi. Tovuqlar ombordan avtomatik ayiriladi.")}</p></div>
+    <div class="card c7"><div class="card-h"><h2>${E("Tandirda hozir")}</h2><button class="btn sm" id="t-notif" hidden>${E("Bildirishnomani yoqish")}</button></div><div id="t-cooking" style="display:flex;flex-direction:column;gap:10px"></div></div>
+    <div class="card c12"><div class="card-h"><h2>${E("Bugun pishirilgan")}</h2><b id="t-today"></b></div><div class="list" id="t-done"></div></div></div>`,
+  bind(root) {
+    const c = cfg(); $("#t-qty", root).value = c.perTandoor; if (!S.dur) S.dur = c.durDefault;
+    const setDur = () => $$("#t-dur button", root).forEach(b => b.setAttribute("aria-pressed", Number(b.dataset.m) === S.dur));
+    $$("#t-dur button", root).forEach(b => b.onclick = () => { S.dur = Number(b.dataset.m); setDur(); }); setDur();
+    try { if (window.Notification && Notification.permission === "default") { const n = $("#t-notif", root); n.hidden = false; n.onclick = () => Notification.requestPermission().then(() => n.hidden = true).catch(() => n.hidden = true); } } catch (e) {}
+    $("#t-start", root).onclick = async () => {
+      const qty = Math.round(Number($("#t-qty", root).value));
+      if (!(qty >= 1)) { $("#t-err", root).textContent = t("Tovuq sonini kiriting."); return; }
+      if (qty > stockCount()) { $("#t-err", root).textContent = t("Omborda faqat {0} ta tovuq bor. Avval \"Ombor\" bo'limida kirim qiling.", stockCount()); return; }
+      $("#t-err", root).textContent = "";
+      const b = { id: uid(), t: Date.now(), qty, dur: S.dur, doneAt: null };
+      await mutateToday(l => push(l, "batches", b));
+      await changeStock(-qty, "tandir");
+      try { navigator.wakeLock && navigator.wakeLock.request("screen").catch(() => {}); } catch (e) {}
+      toast(t("Taymer ishga tushdi: {0} ta, {1} daqiqa", qty, S.dur));
+    };
+    root.addEventListener("click", async e => {
+      const f = e.target.closest("[data-finish]"); if (!f) return;
+      const doc = f.dataset.doc, id = f.dataset.finish; const l = S.logs.get(doc); if (!l) return;
+      const inp = $("#out-" + id, root); const out = Math.max(0, Math.round(Number(inp ? inp.value : NaN)));
+      await mutateLog(doc, l.date, x => { const b = (x.batches || []).find(b => b.id === id); if (b) { b.doneAt = Date.now(); b.outQty = Number.isFinite(out) ? Math.min(out, b.qty) : b.qty; } });
+      toast(t("Tayyor grillar kassaga ko'rindi"));
+    });
+  },
+  update(root) {
+    $("#t-stock", root).textContent = t("{0} ta", stockCount());
+    const cooking = collect().batches.filter(b => !b.doneAt);
+    const box = $("#t-cooking", root); const sig = cooking.map(b => b.id).join(",");
+    if (box.dataset.sig !== sig) { box.dataset.sig = sig; box.innerHTML = cookingList(cooking, true); $$("[data-timer]", box).forEach(updTimer); }
+    const ds = dayStats(dkey()); const done = ds.c.batches.filter(b => b.doneAt);
+    $("#t-today", root).textContent = `${t("{0} ta", ds.cooked)} · ${money(ds.cooked * cfg().cookRate)}`;
+    $("#t-done", root).innerHTML = done.length ? done.slice().reverse().map(b => `<div class="li"><span class="t">${hm(b.t)}–${hm(b.doneAt)}</span><span style="flex:1">${esc(t("{0} ta grill", outQty(b)))}${outQty(b) !== b.qty ? ` <span class="chip warn">${esc(t("{0} ta yaroqsiz", b.qty - outQty(b)))}</span>` : ""}</span><span class="muted small">${esc(t("{0} daqiqa", b.dur))}</span></div>`).join("") : `<div class="empty">${E("Bugun hali partiya chiqmagan.")}</div>`;
+  },
+};
+
+/* BUYURTMALAR (oshpaz) */
+VIEWS.buyurtmalar = {
+  html: () => `<div class="grid"><div class="card c12"><div class="card-h"><h2>${E("Sotuvchidan kelgan buyurtmalar")}</h2><span class="muted small" id="b-sum"></span></div><p class="muted small" style="margin:0">${esc(t("Har bir buyurtma vaqtidan {0} daqiqa oldin jiringlab eslatiladi.", cfg().orderLead))}</p><div class="list" id="b-list"></div></div></div>`,
+  bind(root) {
+    root.addEventListener("click", async e => {
+      const b = e.target.closest("[data-ost]"); if (!b) return;
+      await mutateToday(l => { (l.orderStatus = l.orderStatus || {})[b.dataset.oid] = { s: b.dataset.ost, t: Date.now() }; });
+    });
+  },
+  update(root) {
+    const st = orderStatus(); const now = new Date(); const nowM = now.getHours() * 60 + now.getMinutes();
+    const os = collect(dkey()).orders.slice().sort((a, b) => a.ready.localeCompare(b.ready));
+    const open = os.filter(o => !["ready", "given"].includes(st[o.id]?.s));
+    $("#b-sum", root).textContent = open.length ? t("Kutilmoqda: {0} ta buyurtma, {1} ta grill", open.length, sum(open, o => o.qty)) : "";
+    $("#b-list", root).innerHTML = os.length ? os.map(o => {
+      const s = st[o.id]?.s || "new"; const [h, m] = o.ready.split(":").map(Number); const left = h * 60 + m - nowM;
+      const when = ["ready", "given"].includes(s) ? "" : left >= 0 ? `<span class="chip ${left <= cfg().orderLead ? "warn" : "done"}">${esc(t("{0} daqiqa qoldi", left))}</span>` : `<span class="chip bad">${esc(t("{0} daqiqa kechikdi", -left))}</span>`;
+      const acts = s === "new" ? `<button class="btn sm" data-ost="acc" data-oid="${o.id}">${E("Qabul qildim")}</button><button class="btn sm ok" data-ost="ready" data-oid="${o.id}">${E("Tayyor")}</button>` : s === "acc" ? `<button class="btn sm ok" data-ost="ready" data-oid="${o.id}">${E("Tayyor")}</button>` : "";
+      return `<div class="li"><span class="t" style="font-size:1.1rem">${esc(o.ready)}</span><span style="flex:1;min-width:0"><b>${esc(t("{0} ta grill", o.qty))}</b>${o.note ? ` · ${esc(o.note)}` : ""}<br><span class="muted small">${esc(t("Kelgan: {0}", hm(o.t)))}</span></span>${when}${orderChip(o.id, st)}<span class="row">${acts}</span></div>`;
+    }).join("") : `<div class="empty">${E("Bugun buyurtma kelmagan. Sotuvchi buyurtma yuborsa, shu yerda ovozli xabar bilan chiqadi.")}</div>`;
+  },
+};
+
+/* OMBOR */
+VIEWS.ombor = {
+  html: () => `<div class="grid">
+    <div class="card c4 stripe-acc"><div class="label">${E("Omborda muzlatilgan tovuq")}</div><div class="kpi"><div class="v" id="s-count" style="font-size:2.4rem"></div><div class="s" id="s-note"></div></div></div>
+    <form class="card c4" id="s-in"><h2>${E("Kirim (tovuq keldi)")}</h2><div class="field"><label class="label" for="s-qty">${E("Soni")}</label><input id="s-qty" type="number" min="1" inputmode="numeric" placeholder="300"></div><div class="err" id="s-err"></div><button class="btn primary">${E("Omborga qo'shish")}</button></form>
+    <form class="card c4" id="s-fix"><h2>${E("Sanab tuzatish")}</h2><div class="field"><label class="label" for="s-real">${E("Aslida nechta bor")}</label><input id="s-real" type="number" min="0" inputmode="numeric"></div><button class="btn">${E("Tuzatish")}</button><p class="muted small" style="margin:0">${E("Ombordagi haqiqiy son bilan farq bo'lsa ishlating.")}</p></form>
+    <div class="card c12"><h2>${E("Oxirgi 14 kun harakati")}</h2><div class="tbl-wrap"><table><thead><tr><th>${E("Sana")}</th><th>${E("Kirim")}</th><th>${E("Tandirga")}</th><th>${E("Pishib chiqdi")}</th></tr></thead><tbody id="s-tbl"></tbody></table></div></div></div>`,
+  bind(root) {
+    $("#s-in", root).onsubmit = async e => { e.preventDefault(); const q = Math.round(Number($("#s-qty", root).value)); if (!(q >= 1)) { $("#s-err", root).textContent = t("Sonini kiriting."); return; } $("#s-err", root).textContent = ""; await mutateToday(l => push(l, "stockIn", { id: uid(), t: Date.now(), qty: q })); await changeStock(q, "kirim"); $("#s-qty", root).value = ""; toast(t("Omborga {0} ta qo'shildi", q)); };
+    $("#s-fix", root).onsubmit = async e => { e.preventDefault(); const v = $("#s-real", root).value; if (v === "") return; const q = Math.max(0, Math.round(Number(v))); await changeStock(q - stockCount(), "tuzatish"); $("#s-real", root).value = ""; toast(t("Ombor soni tuzatildi")); };
+  },
+  update(root) {
+    $("#s-count", root).textContent = t("{0} ta", stockCount());
+    $("#s-note", root).textContent = S.stock?.updatedAt ? t("Oxirgi o'zgarish: {0}", dayLabel(dkey(new Date(S.stock.updatedAt))) + " " + hm(S.stock.updatedAt)) : t("Hali kirim qilinmagan");
+    $("#s-tbl", root).innerHTML = daysBack(14).reverse().map(d => { const ds = dayStats(d); return `<tr><td>${dayLabel(d)} ${wd(d)}</td><td>${ds.stockIn ? "+" + ds.stockIn : "—"}</td><td>${ds.used ? "−" + ds.used : "—"}</td><td>${ds.cooked || "—"}</td></tr>`; }).join("");
+  },
+};
+
+/* OYLIK (oshpaz) */
+VIEWS.oylik = {
+  html: () => `<div class="grid"><div class="c12 grid" id="w-kpi" style="grid-column:span 12"></div>
+    <div class="card c12"><h2>${E("Kunlar bo'yicha")}</h2><div class="tbl-wrap"><table><thead><tr><th>${E("Sana")}</th><th>${E("Pishirilgan")}</th><th>${E("Ish haqi")}</th></tr></thead><tbody id="w-tbl"></tbody></table></div></div></div>`,
+  bind() {},
+  update(root) {
+    const r = cfg().cookRate; const now = new Date();
+    const mStart = dkey(new Date(now.getFullYear(), now.getMonth(), 1));
+    const cooked = days => sum(days, d => dayStats(d).cooked);
+    const td = cooked([dkey()]), w = cooked(daysBack(7)), m = cooked(daysBack(31).filter(d => d >= mStart));
+    $("#w-kpi", root).innerHTML = kpi(E("Bugun"), money(td * r), esc(t("{0} ta grill", td)) + ` × ${r} KGS`, "stripe-acc") + kpi(E("Oxirgi 7 kun"), money(w * r), esc(t("{0} ta grill", w))) + kpi(E("Shu oy"), money(m * r), esc(t("{0} ta grill", m))) + kpi(E("Bir grill uchun"), money(r), E("Ish haqi stavkasi"));
+    const from = daysBack(14)[0];
+    $("#w-tbl", root).innerHTML = daysBack(31).reverse().filter(d => d >= mStart || d >= from).map(d => { const c = dayStats(d).cooked; return `<tr><td>${dayLabel(d)} ${wd(d)}</td><td>${c || "—"}</td><td>${c ? money(c * r) : "—"}</td></tr>`; }).join("");
+  },
+};
+
+/* BOSH SAHIFA (direktor) */
+VIEWS.bosh = {
+  html: () => `<div class="grid"><div class="c12 grid" id="d-kpi" style="grid-column:span 12"></div>
+    <div class="c6" id="d-recon"></div>
+    <div class="card c6"><div class="card-h"><h2>${E("Tandirda hozir")}</h2></div><div id="d-cook" style="display:flex;flex-direction:column;gap:10px"></div></div>
+    <div class="card c6"><div class="card-h"><h2>${E("Sotuvlar (vaqti bilan)")}</h2><b id="d-rev"></b></div><div class="list" id="d-sales" style="max-height:420px;overflow:auto"></div></div>
+    <div class="card c6"><div class="card-h"><h2>${E("Buyurtmalar")}</h2></div><div class="list" id="d-orders"></div></div></div>`,
+  bind() {},
+  update(root) {
+    const ds = dayStats(dkey()), cs = cashState(), st = orderStatus(), c = cfg();
+    $("#d-kpi", root).innerHTML =
+      kpi(E("Bugun pishirildi"), esc(t("{0} ta", ds.cooked)), ds.cookingQty ? esc(t("+ {0} ta tandirda", ds.cookingQty)) : E("Tandir bo'sh"), "stripe-acc") +
+      kpi(E("Bugun sotildi"), esc(t("{0} ta", ds.sold)), `${E("Lavash")} ${ds.extras.lavash} · ${E("Non")} ${ds.extras.non} · ${E("Sous")} ${ds.extras.sous}`) +
+      kpi(E("Bugungi tushum"), money(ds.revenue), moneyAll(ds.revenue)) +
+      kpi(E("Kassada naqd"), money(cs.box), cs.later ? esc(t("Shundan oylik qarzi: {0}", money(cs.later))) : E("Hammasi hisobda"), cs.box > 0 ? "stripe-ok" : "") +
+      kpi(E("Sotuvchi keldi"), ds.checkin ? hm(ds.checkin.t) : "—", ds.checkin ? E("Bugun ishga keldi") : E("Hali belgilanmagan"), ds.checkin ? "" : "stripe-warn") +
+      kpi(E("Omborda tovuq"), esc(t("{0} ta", stockCount())), esc(t("Bugun tandirga: {0} ta", ds.used)), stockCount() < c.perTandoor ? "stripe-bad" : "") +
+      kpi(E("Oshpaz ish haqi (bugun)"), money(ds.cooked * c.cookRate), `${ds.cooked} × ${c.cookRate} KGS`) +
+      kpi(E("Bugun olib ketildi"), money(ds.pickups), E("Direktor kassadan")) +
+      kpi(E("Omborda o'tin"), `${woodCount()} ${esc(t(c.woodUnit))}`, woodCount() <= c.woodLow ? E("Kam qoldi!") : "&nbsp;", woodCount() <= c.woodLow ? "stripe-bad" : "") +
+      kpi(E("Javob kutayotgan xabarlar"), String(cs.c.messages.filter(m => !cs.dec[m.id]).length), E("Xabarlar va avans bo'limida"), cs.c.messages.some(m => !cs.dec[m.id]) ? "stripe-warn" : "") +
+      kpi(E("Bugungi xarajatlar"), money(sum(ds.c.expenses, e => e.amount)), E("Kirim-chiqim bo'limida")) +
+      kpi(E("Bugungi premiya va bonus"), money(sum(ds.c.rewards, r => r.amount)), "&nbsp;");
+    $("#d-recon", root).innerHTML = reconCard(ds);
+    const cooking = collect().batches.filter(b => !b.doneAt);
+    const box = $("#d-cook", root); const sig = cooking.map(b => b.id).join(",");
+    if (box.dataset.sig !== sig) { box.dataset.sig = sig; box.innerHTML = cookingList(cooking, false); $$("[data-timer]", box).forEach(updTimer); }
+    $("#d-rev", root).textContent = money(ds.revenue);
+    $("#d-sales", root).innerHTML = ds.c.sales.length ? ds.c.sales.slice().reverse().map(s => `<div class="li"><span class="t">${hm(s.t)}</span><span style="flex:1;min-width:0">${esc(itemsText(s.items))}</span><b>${money(s.total)}</b></div>`).join("") : `<div class="empty">${E("Bugun hali sotuv yo'q.")}</div>`;
+    $("#d-orders", root).innerHTML = ds.c.orders.length ? ds.c.orders.slice().sort((a, b) => a.ready.localeCompare(b.ready)).map(o => `<div class="li"><span class="t">${esc(o.ready)}</span><span style="flex:1">${esc(t("{0} ta", o.qty))}${o.note ? ` · <span class="muted">${esc(o.note)}</span>` : ""}</span>${orderChip(o.id, st)}</div>`).join("") : `<div class="empty">${E("Bugun buyurtma yo'q.")}</div>`;
+  },
+};
+
+/* KASSA NAZORATI */
+VIEWS.nazorat = {
+  html: () => `<div class="grid"><div class="c12 grid" id="n-kpi" style="grid-column:span 12"></div>
+    <form class="card c5 stripe-acc" id="n-form"><h2>${E("Kassadagi pulni olib ketish")}</h2><div class="field"><label class="label" for="n-amt">${E("Summa (KGS)")}</label><input id="n-amt" type="number" min="1" inputmode="numeric"></div><div class="field"><label class="label" for="n-note">${E("Izoh")}</label><input id="n-note" maxlength="80"></div><div class="err" id="n-err"></div><button class="btn primary big">${E("Pulni oldim")}</button></form>
+    <div class="card c7"><h2>${E("Olib ketilgan pullar")}</h2><div class="list" id="n-pick"></div></div>
+    <div class="card c12"><h2>${E("Oyliklar tarixi")}</h2><div class="list" id="n-wages"></div></div></div>`,
+  bind(root) {
+    $("#n-form", root).onsubmit = async e => {
+      e.preventDefault(); const a = Math.round(Number($("#n-amt", root).value));
+      if (!(a > 0)) { $("#n-err", root).textContent = t("Summani kiriting."); return; } $("#n-err", root).textContent = "";
+      await mutateToday(l => push(l, "pickups", { id: uid(), t: Date.now(), amount: a, note: $("#n-note", root).value.trim() }));
+      $("#n-amt", root).value = ""; $("#n-note", root).value = ""; toast(t("Kassadan olindi: {0}", money(a)));
+    };
+  },
+  update(root) {
+    const cs = cashState();
+    $("#n-kpi", root).innerHTML = kpi(E("Kassada naqd"), money(cs.box), moneyAll(cs.box), "stripe-ok") + kpi(E("Oylik qarzi (keyin olinadi)"), money(cs.later), E("Kassadan ajratilgan")) + kpi(E("Sof qoldiq"), money(cs.net), E("Naqd − oylik qarzi")) + kpi(E("Jami olib ketilgan"), money(cs.picked), E("Oxirgi 90 kun"));
+    const a = $("#n-amt", root); if (a && !a.value && document.activeElement !== a) a.placeholder = String(Math.max(0, cs.box));
+    $("#n-pick", root).innerHTML = cs.c.pickups.length ? cs.c.pickups.slice().reverse().slice(0, 30).map(p => `<div class="li"><span>${dayLabel(p.date)} <b>${hm(p.t)}</b>${p.note ? ` · <span class="muted">${esc(p.note)}</span>` : ""}</span><b>${money(p.amount)}</b></div>`).join("") : `<div class="empty">${E("Hali pul olib ketilmagan.")}</div>`;
+    $("#n-wages", root).innerHTML = cs.c.wages.length ? cs.c.wages.slice().reverse().slice(0, 30).map(w => `<div class="li"><span>${dayLabel(w.date)} ${hm(w.t)} · ${E("Sotuvchi")}</span><span class="row"><b>${money(w.amount)}</b><span class="chip ${w.status === "taken" ? "ready" : "warn"}">${w.status === "taken" ? E("Oldi") : E("Keyin oladi")}</span></span></div>`).join("") : `<div class="empty">${E("Oylik yozuvlari yo'q.")}</div>`;
+  },
+};
+
+/* ANALITIKA */
+VIEWS.analitika = {
+  html: () => `<div class="grid"><div class="card c12"><div class="card-h"><h2>${E("Analitika")}</h2><div class="seg" role="group">${[7, 14, 30].map(n => `<button data-range="${n}">${esc(t("{0} kun", n))}</button>`).join("")}</div></div><div class="grid" id="a-kpi"></div></div>
+    <div class="card c7"><h2>${E("Pishirilgan va sotilgan grillar")}</h2><div id="a-ch1"></div></div>
+    <div class="card c5" id="a-revcard"><h2>${E("Kunlik tushum")}</h2><div id="a-ch2"></div></div>
+    <div class="card c12"><h2>${E("Kunlar jadvali")}</h2><div class="tbl-wrap"><table><thead id="a-th"></thead><tbody id="a-tbl"></tbody></table></div></div></div>`,
+  bind(root) {
+    const set = () => $$("[data-range]", root).forEach(b => b.setAttribute("aria-pressed", Number(b.dataset.range) === S.range));
+    $$("[data-range]", root).forEach(b => b.onclick = () => { S.range = Number(b.dataset.range); set(); this.update(root); }); set();
+  },
+  update(root) {
+    const showMoney = S.session.role !== "oshpaz";
+    const days = daysBack(S.range); const stats = {}; days.forEach(d => stats[d] = dayStats(d));
+    const tc = sum(days, d => stats[d].cooked), ts = sum(days, d => stats[d].sold), tr = sum(days, d => stats[d].revenue);
+    const active = days.filter(d => stats[d].cooked || stats[d].sold).length || 1;
+    const r = cfg().cookRate;
+    $("#a-kpi", root).innerHTML = kpi(E("Pishirildi"), esc(t("{0} ta", tc)), esc(t("O'rtacha {0} ta/kun", Math.round(tc / active))), "stripe-acc") + kpi(E("Sotildi"), esc(t("{0} ta", ts)), esc(t("Farq: {0}", tc - ts))) +
+      (showMoney ? kpi(E("Tushum"), money(tr), moneyAll(tr)) : "") + kpi(E("Oshpaz ish haqi"), money(tc * r), `${tc} × ${r} KGS`) + (showMoney ? kpi(E("Sotuvchi oyligi"), money(sum(days, d => stats[d].sellerWage)), esc(t("{0} kun", days.filter(d => stats[d].sellerWage).length))) : "");
+    $("#a-ch1", root).innerHTML = barChart(days, [{ name: t("Pishirildi"), color: "var(--accent)", get: d => stats[d].cooked }, { name: t("Sotildi"), color: "var(--cool)", get: d => stats[d].sold }], { label: t("Pishirilgan va sotilgan grillar") });
+    $("#a-revcard", root).hidden = !showMoney;
+    if (showMoney) $("#a-ch2", root).innerHTML = barChart(days, [{ name: t("Tushum") + ", KGS", color: "var(--ok)", get: d => stats[d].revenue }], { label: t("Kunlik tushum") });
+    $("#a-th", root).innerHTML = `<tr><th>${E("Sana")}</th><th>${E("Pishirildi")}</th><th>${E("Sotildi")}</th><th>${E("Farq")}</th>${showMoney ? `<th>${E("Tushum")}</th><th>${E("Sotuvchi keldi")}</th>` : ""}</tr>`;
+    $("#a-tbl", root).innerHTML = days.slice().reverse().map(d => { const s = stats[d]; return `<tr><td>${dayLabel(d)} ${wd(d)}</td><td>${s.cooked || "—"}</td><td>${s.sold || "—"}</td><td>${s.cooked || s.sold ? (s.left > 0 ? "+" : "") + s.left : "—"}</td>${showMoney ? `<td>${s.revenue ? money(s.revenue) : "—"}</td><td>${s.checkin ? hm(s.checkin.t) : "—"}</td>` : ""}</tr>`; }).join("");
+  },
+};
+
+/* JURNAL */
+VIEWS.jurnal = {
+  html: () => `<div class="grid"><div class="card c12"><div class="card-h"><h2>${E("Kun jurnali")}</h2><div class="row"><label class="label" for="j-date">${E("Sana")}</label><input id="j-date" type="date" style="border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface2)"></div></div><div id="j-sum" class="small muted"></div><div class="list" id="j-list"></div></div></div>`,
+  bind(root) { const i = $("#j-date", root); i.value = S.jurnalDate; i.max = dkey(); i.onchange = () => { S.jurnalDate = i.value || dkey(); this.update(root); }; },
+  update(root) {
+    const d = S.jurnalDate, ds = dayStats(d), c = ds.c; const ev = [];
+    c.checkins.forEach(x => ev.push([x.t, t("Sotuvchi ishga keldi"), ""]));
+    c.sales.forEach(x => ev.push([x.t, t("Sotuv") + ": " + itemsText(x.items), money(x.total)]));
+    c.orders.forEach(x => ev.push([x.t, t("Buyurtma: {0} ta, soat {1} ga", x.qty, x.ready) + (x.note ? " (" + x.note + ")" : ""), ""]));
+    c.batches.forEach(x => { ev.push([x.t, t("Tandirga qo'yildi: {0} ta, {1} daqiqa", x.qty, x.dur), ""]); if (x.doneAt) ev.push([x.doneAt, t("Tandirdan chiqdi: {0} ta", outQty(x)), ""]); });
+    c.stockIn.forEach(x => ev.push([x.t, t("Omborga kirim: {0} ta", x.qty), ""]));
+    c.wages.forEach(x => ev.push([x.t, x.status === "taken" ? t("Sotuvchi oyligi (oldi)") : t("Sotuvchi oyligi (keyin oladi)"), "−" + money(x.amount)]));
+    c.pickups.forEach(x => ev.push([x.t, t("Direktor kassadan oldi") + (x.note ? " (" + x.note + ")" : ""), "−" + money(x.amount)]));
+    c.expenses.forEach(x => ev.push([x.t, t("Xarajat") + ": " + t(x.cat) + (x.note ? " (" + x.note + ")" : ""), "−" + money(x.amount)]));
+    c.incomes.forEach(x => ev.push([x.t, t("Kirim") + (x.note ? " (" + x.note + ")" : ""), "+" + money(x.amount)]));
+    c.woodIn.forEach(x => ev.push([x.t, t("O'tin keldi") + `: ${x.qty} ${t(cfg().woodUnit)}`, ""]));
+    c.woodUse.forEach(x => ev.push([x.t, t("O'tin ishlatildi") + `: ${x.qty} ${t(cfg().woodUnit)}`, ""]));
+    c.messages.forEach(x => ev.push([x.t, `${t(ROLES[x.by] || x.by)} → ${t("Direktor")}: ` + (x.type === "avans" ? t("Avans") + " " + money(x.amount) + " " : "") + (x.text || ""), ""]));
+    c.rewards.forEach(x => ev.push([x.t, `${x.kind === "bonus" ? t("Bonus") : t("Premiya")} → ${t(ROLES[x.who])}`, money(x.amount)]));
+    ev.sort((a, b) => a[0] - b[0]);
+    $("#j-sum", root).textContent = t("Pishirildi {0} ta · Sotildi {1} ta · Tushum {2}", ds.cooked, ds.sold, money(ds.revenue));
+    $("#j-list", root).innerHTML = ev.length ? ev.map(([tm, txt, v]) => `<div class="li"><span class="t">${hm(tm)}</span><span style="flex:1;min-width:0">${esc(txt)}</span><b>${v}</b></div>`).join("") : `<div class="empty">${E("Bu kunda yozuv yo'q.")}</div>`;
+  },
+};
+
+/* SOZLAMALAR */
+VIEWS.sozlama = {
+  html: () => `<div class="grid">
+    <form class="card c6" id="z-price"><h2>${E("Narxlar va stavkalar (KGS)")}</h2>
+      <div class="row">${ITEMS.map(([k, n]) => `<div class="field" style="min-width:110px"><label class="label" for="z-${k}">${E(n)}</label><input id="z-${k}" type="number" min="0" inputmode="numeric"></div>`).join("")}</div>
+      <div class="row"><div class="field"><label class="label" for="z-cook">${E("Oshpaz, 1 grill uchun")}</label><input id="z-cook" type="number" min="0"></div><div class="field"><label class="label" for="z-wage">${E("Sotuvchi, kunlik")}</label><input id="z-wage" type="number" min="0"></div></div>
+      <div class="row"><div class="field"><label class="label" for="z-per">${E("1 tandirga tovuq")}</label><input id="z-per" type="number" min="1"></div><div class="field"><label class="label" for="z-dur">${E("Odatiy pishish (daq.)")}</label><input id="z-dur" type="number" min="20" max="30"></div></div>
+      <div class="row"><div class="field"><label class="label" for="z-lead">${E("Buyurtmadan necha daqiqa oldin eslatish")}</label><input id="z-lead" type="number" min="5" max="180"></div><div class="field"><label class="label" for="z-low">${E("Grill kam qolganda eslatish (dona)")}</label><input id="z-low" type="number" min="0" max="100"></div></div>
+      <div class="row"><div class="field"><label class="label" for="z-wu">${E("O'tin o'lchov birligi")}</label><select id="z-wu">${["qop", "bog'", "kg", "m³"].map(u => `<option value="${u}">${E(u)}</option>`).join("")}</select></div><div class="field"><label class="label" for="z-wl">${E("O'tin kam qolganda eslatish")}</label><input id="z-wl" type="number" min="0" step="0.5"></div></div>
+      <button class="btn primary">${E("Saqlash")}</button></form>
+    <form class="card c6" id="z-rate"><h2>${E("Valyuta kursi")}</h2>
+      <div class="row"><div class="field"><label class="label" for="z-kgs">1 USD = KGS</label><input id="z-kgs" type="number" step="0.01" min="1"></div><div class="field"><label class="label" for="z-uzs">1 USD = UZS</label><input id="z-uzs" type="number" step="1" min="1"></div></div>
+      <div class="small muted" id="z-rinfo"></div>
+      <div class="row"><button class="btn" type="button" id="z-auto">${E("Internetdan yangilash")}</button><button class="btn primary">${E("Qo'lda saqlash")}</button></div></form>
+    <form class="card c6" id="z-pw"><h2>${E("Parolni almashtirish")}</h2>
+      <div class="row"><div class="field"><label class="label" for="z-user">${E("Login")}</label><select id="z-user">${Object.keys(ROLES).map(r => `<option value="${r}">${r} · ${E(ROLES[r])}</option>`).join("")}</select></div>
+      <div class="field"><label class="label" for="z-new">${E("Yangi parol")}</label><input id="z-new" type="text" minlength="6" autocomplete="new-password"></div></div>
+      <div class="err" id="z-perr"></div><button class="btn primary">${E("Parolni saqlash")}</button></form>
+    <div class="card c6"><h2>${E("Ma'lumot")}</h2><p class="small muted" style="margin:0">${E("Barcha qurilmalar bitta bazadan foydalanadi: kassir sotganini oshpaz va direktor shu zahoti ko'radi. Tarix 90 kun saqlanadi va ko'rsatiladi.")}</p></div></div>`,
+  bind(root) {
+    const c = cfg();
+    ITEMS.forEach(([k]) => $("#z-" + k, root).value = c.prices[k]);
+    $("#z-cook", root).value = c.cookRate; $("#z-wage", root).value = c.sellerWage; $("#z-per", root).value = c.perTandoor; $("#z-dur", root).value = c.durDefault; $("#z-lead", root).value = c.orderLead; $("#z-low", root).value = c.lowStock; $("#z-wu", root).value = c.woodUnit; $("#z-wl", root).value = c.woodLow;
+    if (S.rates) { $("#z-kgs", root).value = S.rates.usdKgs; $("#z-uzs", root).value = Math.round(S.rates.usdUzs); }
+    $("#z-price", root).onsubmit = async e => {
+      e.preventDefault(); const n = id => Math.max(0, Number($(id, root).value) || 0);
+      const next = structuredClone(S.settings || {});
+      next.prices = {}; ITEMS.forEach(([k]) => next.prices[k] = n("#z-" + k));
+      next.cookRate = n("#z-cook"); next.sellerWage = n("#z-wage"); next.perTandoor = Math.max(1, n("#z-per")); next.durDefault = Math.min(30, Math.max(20, n("#z-dur") || 25));
+      next.orderLead = Math.min(180, Math.max(5, n("#z-lead") || 40)); next.lowStock = Math.min(100, n("#z-low")); next.woodUnit = $("#z-wu", root).value; next.woodLow = n("#z-wl");
+      S.settings = next; refresh(); await writeMeta("settings", next); toast(t("Sozlamalar saqlandi"));
+    };
+    $("#z-rate", root).onsubmit = async e => {
+      e.preventDefault(); const k = Number($("#z-kgs", root).value), u = Number($("#z-uzs", root).value);
+      if (!(k > 0 && u > 0)) return toast(t("Ikkala kursni kiriting"), "err");
+      S.rates = { usdKgs: k, usdUzs: u, updatedAt: Date.now(), source: "manual" }; refresh(); await writeMeta("rates", S.rates); toast(t("Kurs saqlandi"));
+    };
+    $("#z-auto", root).onclick = () => refreshRates(true).then(() => { if (S.rates) { $("#z-kgs", root).value = S.rates.usdKgs; $("#z-uzs", root).value = Math.round(S.rates.usdUzs); } });
+    $("#z-pw", root).onsubmit = async e => {
+      e.preventDefault(); const u = $("#z-user", root).value, p = $("#z-new", root).value;
+      if (p.length < 6) { $("#z-perr", root).textContent = t("Parol kamida 6 belgidan iborat bo'lsin."); return; } $("#z-perr", root).textContent = "";
+      const next = structuredClone(S.settings); const salt = [...crypto.getRandomValues(new Uint8Array(8))].map(x => x.toString(16).padStart(2, "0")).join("");
+      next.users[u] = { ...next.users[u], salt, hash: await sha(salt + ":" + p) };
+      S.settings = next; await writeMeta("settings", next); $("#z-new", root).value = ""; toast(t("\"{0}\" paroli almashtirildi", u));
+    };
+  },
+  update(root) {
+    const r = S.rates; $("#z-rinfo", root).textContent = r ? t("Oxirgi yangilanish: {0} · manba: {1}", dayLabel(dkey(new Date(r.updatedAt))) + " " + hm(r.updatedAt), r.source || "—") : t("Kurs hali kiritilmagan.");
+  },
+};
+
+/* KIRIM-CHIQIM */
+VIEWS.xarajat = {
+  html: () => `<div class="grid">
+    <form class="card c5" id="x-form"><h2>${E("Yangi yozuv")}</h2>
+      <div class="seg" role="group" id="x-type"><button type="button" data-xt="exp" aria-pressed="true">${E("Chiqim (xarajat)")}</button><button type="button" data-xt="inc" aria-pressed="false">${E("Kirim")}</button></div>
+      <div class="field" id="x-catf"><label class="label" for="x-cat">${E("Turi")}</label><select id="x-cat">${EXP_CATS.map(c => `<option value="${esc(c)}">${E(c)}</option>`).join("")}</select></div>
+      <div class="row"><div class="field"><label class="label" for="x-amt">${E("Summa (KGS)")}</label><input id="x-amt" type="number" min="1" inputmode="numeric"></div>
+      <div class="field"><label class="label" for="x-note">${E("Izoh")}</label><input id="x-note" maxlength="120"></div></div>
+      <label class="row small"><input type="checkbox" id="x-kassa" checked> <span id="x-kassal">${E("Pul kassadan olindi")}</span></label>
+      <div class="err" id="x-err"></div><button class="btn primary big">${E("Saqlash")}</button></form>
+    <div class="card c7"><div class="card-h"><h2>${E("Foyda va zarar")}</h2><div class="seg" role="group">${[1, 7, 30].map(n => `<button data-xr="${n}">${n === 1 ? E("Bugun") : esc(t("{0} kun", n))}</button>`).join("")}</div></div>
+      <div class="tbl-wrap"><table><tbody id="x-pl"></tbody></table></div></div>
+    <div class="card c12"><h2>${E("Kirim-chiqim yozuvlari")}</h2><div class="list" id="x-list"></div></div></div>`,
+  bind(root) {
+    this.xt = "exp"; if (!S.xr) S.xr = 7;
+    const setT = () => { $$("[data-xt]", root).forEach(b => b.setAttribute("aria-pressed", b.dataset.xt === this.xt)); $("#x-catf", root).hidden = this.xt !== "exp"; $("#x-kassal", root).textContent = this.xt === "exp" ? t("Pul kassadan olindi") : t("Pul kassaga qo'yildi"); };
+    $$("[data-xt]", root).forEach(b => b.onclick = () => { this.xt = b.dataset.xt; setT(); }); setT();
+    const setR = () => $$("[data-xr]", root).forEach(b => b.setAttribute("aria-pressed", Number(b.dataset.xr) === S.xr));
+    $$("[data-xr]", root).forEach(b => b.onclick = () => { S.xr = Number(b.dataset.xr); setR(); this.update(root); }); setR();
+    $("#x-form", root).onsubmit = async e => {
+      e.preventDefault(); const a = Math.round(Number($("#x-amt", root).value));
+      if (!(a > 0)) { $("#x-err", root).textContent = t("Summani kiriting."); return; } $("#x-err", root).textContent = "";
+      const note = $("#x-note", root).value.trim(), k = $("#x-kassa", root).checked;
+      if (this.xt === "exp") await mutateToday(l => push(l, "expenses", { id: uid(), t: Date.now(), cat: $("#x-cat", root).value, amount: a, note, fromKassa: k }));
+      else await mutateToday(l => push(l, "incomes", { id: uid(), t: Date.now(), amount: a, note, toKassa: k }));
+      $("#x-amt", root).value = ""; $("#x-note", root).value = ""; toast(t("Saqlandi: {0}", money(a)));
+    };
+  },
+  update(root) {
+    const days = new Set(daysBack(S.xr)); const all = collect(); const dec = decisions(); const c = cfg();
+    const inR = x => days.has(x.date);
+    const sales = sum(all.sales.filter(inR), s => s.total), inc = sum(all.incomes.filter(inR), x => x.amount);
+    const exps = all.expenses.filter(inR); const byCat = {}; exps.forEach(e => byCat[e.cat] = (byCat[e.cat] || 0) + e.amount);
+    const wages = sum(all.wages.filter(inR), w => w.amount);
+    const cooked = sum(all.batches.filter(b => b.doneAt && inR(b)), outQty);
+    const cookPay = cooked * c.cookRate;
+    const avans = sum(all.messages.filter(m => inR(m) && m.type === "avans" && ["paidKassa", "paidHand"].includes(dec[m.id]?.s)), m => m.amount);
+    const rew = sum(all.rewards.filter(inR), r => r.amount);
+    const incomeT = sales + inc, expT = sum(exps, e => e.amount) + wages + cookPay + rew;
+    const profit = incomeT - expT;
+    const row = (a, b, cls = "") => `<tr class="${cls}"><td>${a}</td><td>${b}</td></tr>`;
+    $("#x-pl", root).innerHTML = row(E("Grill va qo'shimchalar sotuvi"), money(sales)) + row(E("Boshqa kirim"), money(inc)) + row(`<b>${E("Jami kirim")}</b>`, `<b>${money(incomeT)}</b>`) +
+      Object.entries(byCat).map(([k, v]) => row(esc(t(k)), "−" + money(v))).join("") + row(E("Sotuvchi oyligi"), "−" + money(wages)) + row(esc(t("Oshpaz ish haqi ({0} ta grill)", cooked)), "−" + money(cookPay)) + row(E("Premiya va bonuslar"), "−" + money(rew)) +
+      row(`<b>${E("Jami chiqim")}</b>`, `<b>−${money(expT)}</b>`) + row(`<b>${profit >= 0 ? E("Sof foyda") : E("Zarar")}</b>`, `<b style="color:var(${profit >= 0 ? "--ok" : "--bad"})">${money(profit)}</b>`) +
+      row(`<span class="muted">${E("Berilgan avanslar (oylikdan ushlanadi)")}</span>`, `<span class="muted">${money(avans)}</span>`);
+    const ev = [...all.expenses.map(e => ({ ...e, k: "exp" })), ...all.incomes.map(e => ({ ...e, k: "inc" }))].sort((a, b) => b.t - a.t).slice(0, 60);
+    $("#x-list", root).innerHTML = ev.length ? ev.map(e => `<div class="li"><span class="t">${dayLabel(e.date)} ${hm(e.t)}</span><span style="flex:1;min-width:0">${e.k === "exp" ? esc(t(e.cat)) : E("Kirim")}${e.note ? ` · <span class="muted">${esc(e.note)}</span>` : ""} <span class="muted small">· ${esc(t(ROLES[e.by] || e.by))}${(e.fromKassa || e.toKassa) ? " · " + E("kassa") : ""}</span></span><b style="color:var(${e.k === "exp" ? "--bad" : "--ok"})">${e.k === "exp" ? "−" : "+"}${money(e.amount)}</b></div>`).join("") : `<div class="empty">${E("Hali yozuv yo'q. Har bir xarajatni shu yerga yozing: tovuq, o'tin, ijara, svet va boshqalar.")}</div>`;
+  },
+};
+
+/* O'TIN */
+VIEWS.otin = {
+  html: () => `<div class="grid">
+    <div class="card c4 stripe-acc" id="w-card"><div class="label">${E("Omborda o'tin")}</div><div class="kpi"><div class="v" id="w-amt" style="font-size:2.4rem"></div><div class="s" id="w-note"></div></div></div>
+    <form class="card c4" id="w-use"><h2>${E("O'tin ishlatildi")}</h2><div class="field"><label class="label" for="w-uq" id="w-uql"></label><input id="w-uq" type="number" min="0.1" step="0.1" inputmode="decimal"></div><button class="btn primary">${E("Ayirish")}</button></form>
+    <form class="card c4" id="w-in"><h2>${E("O'tin keldi")}</h2><div class="row"><div class="field"><label class="label" for="w-iq" id="w-iql"></label><input id="w-iq" type="number" min="0.1" step="0.1" inputmode="decimal"></div><div class="field"><label class="label" for="w-ip">${E("Narxi (KGS, ixtiyoriy)")}</label><input id="w-ip" type="number" min="0" inputmode="numeric"></div></div><button class="btn">${E("Qo'shish")}</button><p class="muted small" style="margin:0">${E("Narx yozilsa, kirim-chiqimga xarajat sifatida tushadi.")}</p></form>
+    <div class="card c12"><h2>${E("Oxirgi 14 kun")}</h2><div class="tbl-wrap"><table><thead><tr><th>${E("Sana")}</th><th>${E("Keldi")}</th><th>${E("Ishlatildi")}</th><th>${E("Pishirilgan grill")}</th></tr></thead><tbody id="w-tbl"></tbody></table></div></div></div>`,
+  bind(root) {
+    const u = () => t(cfg().woodUnit);
+    $("#w-uql", root).textContent = t("Miqdori ({0})", u()); $("#w-iql", root).textContent = t("Miqdori ({0})", u());
+    $("#w-use", root).onsubmit = async e => { e.preventDefault(); const q = Number($("#w-uq", root).value); if (!(q > 0)) return; await mutateToday(l => push(l, "woodUse", { id: uid(), t: Date.now(), qty: q })); await changeWood(-q, "use"); $("#w-uq", root).value = ""; toast(t("O'tin ayirildi: {0} {1}", q, u())); };
+    $("#w-in", root).onsubmit = async e => {
+      e.preventDefault(); const q = Number($("#w-iq", root).value); if (!(q > 0)) return; const pr = Math.round(Number($("#w-ip", root).value) || 0);
+      await mutateToday(l => { push(l, "woodIn", { id: uid(), t: Date.now(), qty: q, price: pr }); if (pr > 0) push(l, "expenses", { id: uid(), t: Date.now(), cat: "O'tin", amount: pr, note: `${q} ${cfg().woodUnit}`, fromKassa: false }); });
+      await changeWood(q, "in"); $("#w-iq", root).value = ""; $("#w-ip", root).value = ""; toast(t("O'tin qo'shildi: {0} {1}", q, u()));
+    };
+  },
+  update(root) {
+    const c = cfg(), u = t(c.woodUnit), low = woodCount() <= c.woodLow;
+    $("#w-amt", root).textContent = `${woodCount()} ${u}`;
+    $("#w-card", root).className = "card c4 " + (low ? "stripe-bad" : "stripe-acc");
+    $("#w-note", root).textContent = low ? t("Kam qoldi! {0} {1} dan kam bo'lsa direktorga eslatma boradi.", c.woodLow, u) : t("{0} {1} dan kam qolsa, direktorga eslatma boradi.", c.woodLow, u);
+    $("#w-tbl", root).innerHTML = daysBack(14).reverse().map(d => { const x = collect(d); const i = sum(x.woodIn, w => w.qty), us = sum(x.woodUse, w => w.qty); const g = sum(x.batches.filter(b => b.doneAt), outQty); return `<tr><td>${dayLabel(d)} ${wd(d)}</td><td>${i ? "+" + i : "—"}</td><td>${us ? "−" + us : "—"}</td><td>${g || "—"}</td></tr>`; }).join("");
+  },
+};
+
+/* DIREKTORGA XABAR (kassir, oshpaz) */
+VIEWS.xabar = {
+  html: () => `<div class="grid">
+    <form class="card c6" id="m-form"><h2>${E("Direktorga yozish")}</h2>
+      <div class="seg" role="group"><button type="button" data-mt="msg" aria-pressed="true">${E("Xabar")}</button><button type="button" data-mt="avans" aria-pressed="false">${E("Avans so'rash")}</button></div>
+      <div class="field" id="m-amtf" hidden><label class="label" for="m-amt">${E("Avans summasi (KGS)")}</label><input id="m-amt" type="number" min="1" inputmode="numeric"></div>
+      <div class="field"><label class="label" for="m-text" id="m-textl">${E("Xabar matni")}</label><textarea id="m-text" rows="3" maxlength="400" style="border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:10px 12px;font:inherit;color:inherit;resize:vertical"></textarea></div>
+      <div class="row" id="m-quick"></div>
+      <div class="err" id="m-err"></div><button class="btn primary big">${E("Direktorga yuborish")}</button></form>
+    <div class="card c6"><h2>${E("Mening so'rovlarim")}</h2><div class="list" id="m-list"></div></div>
+    <div class="card c12"><h2>${E("Premiya va bonuslarim")}</h2><div class="list" id="m-rew"></div></div></div>`,
+  bind(root) {
+    this.mt = "msg";
+    const quick = S.session.role === "oshpaz" ? ["O'tin kam qoldi", "Tovuq kam qoldi", "Tandir ta'mir talab qiladi"] : ["Lavash tugadi", "Sous tugadi", "Kassada mayda pul yo'q"];
+    $("#m-quick", root).innerHTML = quick.map(q => `<button type="button" class="btn sm" data-q="${esc(q)}">${E(q)}</button>`).join("");
+    $$("[data-q]", root).forEach(b => b.onclick = () => { $("#m-text", root).value = t(b.dataset.q); });
+    const setT = () => { $$("[data-mt]", root).forEach(b => b.setAttribute("aria-pressed", b.dataset.mt === this.mt)); $("#m-amtf", root).hidden = this.mt !== "avans"; $("#m-textl", root).textContent = this.mt === "avans" ? t("Sababi (ixtiyoriy)") : t("Xabar matni"); };
+    $$("[data-mt]", root).forEach(b => b.onclick = () => { this.mt = b.dataset.mt; setT(); }); setT();
+    $("#m-form", root).onsubmit = async e => {
+      e.preventDefault(); const text = $("#m-text", root).value.trim(); const amt = Math.round(Number($("#m-amt", root).value));
+      if (this.mt === "avans" && !(amt > 0)) { $("#m-err", root).textContent = t("Avans summasini kiriting."); return; }
+      if (this.mt === "msg" && !text) { $("#m-err", root).textContent = t("Xabar matnini yozing."); return; }
+      $("#m-err", root).textContent = "";
+      await mutateToday(l => push(l, "messages", { id: uid(), t: Date.now(), type: this.mt, text, amount: this.mt === "avans" ? amt : 0 }));
+      $("#m-text", root).value = ""; $("#m-amt", root).value = ""; toast(t("Direktorga yuborildi"));
+    };
+  },
+  update(root) {
+    const all = collect(), dec = decisions(), me = S.session.role;
+    const mine = all.messages.filter(m => m.by === me).reverse().slice(0, 40);
+    $("#m-list", root).innerHTML = mine.length ? mine.map(m => `<div class="li"><span class="t">${dayLabel(m.date)} ${hm(m.t)}</span><span style="flex:1;min-width:0">${m.type === "avans" ? `<b>${E("Avans")}: ${money(m.amount)}</b>` : ""}${m.text ? " " + esc(m.text) : ""}${dec[m.id]?.note ? `<br><span class="muted small">${E("Javob")}: ${esc(dec[m.id].note)}</span>` : ""}</span>${decChip(dec[m.id])}</div>`).join("") : `<div class="empty">${E("Hali so'rov yubormagansiz.")}</div>`;
+    const rew = all.rewards.filter(r => r.who === me).reverse();
+    $("#m-rew", root).innerHTML = rew.length ? rew.map(r => `<div class="li"><span class="t">${dayLabel(r.date)}</span><span style="flex:1">${r.kind === "bonus" ? E("Bonus") : E("Premiya")}${r.note ? ` · ${esc(r.note)}` : ""}</span><b style="color:var(--ok)">+${money(r.amount)}</b></div>`).join("") : `<div class="empty">${E("Hozircha yo'q.")}</div>`;
+  },
+};
+
+/* XABARLAR VA AVANS (direktor) */
+VIEWS.xabarlar = {
+  html: () => `<div class="grid">
+    <div class="card c7"><div class="card-h"><h2>${E("Xodimlardan kelgan xabarlar")}</h2><span class="muted small" id="i-sum"></span></div><div class="list" id="i-list"></div></div>
+    <form class="card c5 stripe-acc" id="r-form"><h2>${E("Premiya yoki bonus berish")}</h2>
+      <div class="row"><div class="field"><label class="label" for="r-who">${E("Kimga")}</label><select id="r-who"><option value="kassir">${E("Sotuvchi · kassir")}</option><option value="oshpaz">${E("Oshpaz")}</option></select></div>
+      <div class="field"><label class="label" for="r-kind">${E("Turi")}</label><select id="r-kind"><option value="premiya">${E("Premiya")}</option><option value="bonus">${E("Bonus")}</option></select></div></div>
+      <div class="row"><div class="field"><label class="label" for="r-amt">${E("Summa (KGS)")}</label><input id="r-amt" type="number" min="1" inputmode="numeric"></div><div class="field"><label class="label" for="r-note">${E("Sababi")}</label><input id="r-note" maxlength="120"></div></div>
+      <label class="row small"><input type="checkbox" id="r-kassa"> ${E("Pul kassadan berildi")}</label>
+      <div class="err" id="r-err"></div><button class="btn primary big">${E("Berish")}</button></form>
+    <div class="card c12"><h2>${E("Berilgan premiya va bonuslar")}</h2><div class="list" id="r-list"></div></div></div>`,
+  bind(root) {
+    root.addEventListener("click", async e => {
+      const b = e.target.closest("[data-dec]"); if (!b) return;
+      const id = b.dataset.mid; const note = ($("#dn-" + id, root)?.value || "").trim();
+      await mutateToday(l => { (l.decisions = l.decisions || {})[id] = { s: b.dataset.dec, t: Date.now(), note }; });
+      toast(t("Javob yuborildi"));
+    });
+    $("#r-form", root).onsubmit = async e => {
+      e.preventDefault(); const a = Math.round(Number($("#r-amt", root).value)); if (!(a > 0)) { $("#r-err", root).textContent = t("Summani kiriting."); return; } $("#r-err", root).textContent = "";
+      const r = { id: uid(), t: Date.now(), who: $("#r-who", root).value, kind: $("#r-kind", root).value, amount: a, note: $("#r-note", root).value.trim(), fromKassa: $("#r-kassa", root).checked };
+      await mutateToday(l => push(l, "rewards", r)); $("#r-amt", root).value = ""; $("#r-note", root).value = ""; toast(t("Berildi: {0}", money(a)));
+    };
+  },
+  update(root) {
+    const all = collect(), dec = decisions();
+    const ms = all.messages.slice().reverse().slice(0, 60);
+    const open = ms.filter(m => !dec[m.id]);
+    $("#i-sum", root).textContent = open.length ? t("Javob kutayotgan: {0}", open.length) : "";
+    const focused = document.activeElement && document.activeElement.id && document.activeElement.id.startsWith("dn-");
+    if (!focused) $("#i-list", root).innerHTML = ms.length ? ms.map(m => { const d = dec[m.id]; return `<div class="li" style="align-items:flex-start"><span class="t">${dayLabel(m.date)}<br>${hm(m.t)}</span><span style="flex:1;min-width:0"><b>${esc(t(ROLES[m.by] || m.by))}</b> ${m.type === "avans" ? `<span class="chip warn">${E("Avans")}: ${money(m.amount)}</span>` : ""}<br>${esc(m.text || "")}${d?.note ? `<br><span class="muted small">${E("Javob")}: ${esc(d.note)}</span>` : ""}
+      ${d ? "" : `<div class="row" style="margin-top:6px"><input id="dn-${m.id}" placeholder="${E("Javob (ixtiyoriy)")}" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface2)">${m.type === "avans" ? `<button class="btn sm ok" data-dec="paidKassa" data-mid="${m.id}">${E("Kassadan berish")}</button><button class="btn sm" data-dec="paidHand" data-mid="${m.id}">${E("Qo'ldan berdim")}</button><button class="btn sm" data-dec="rejected" data-mid="${m.id}">${E("Rad etish")}</button>` : `<button class="btn sm" data-dec="seen" data-mid="${m.id}">${E("O'qidim")}</button>`}</div>`}</span>${decChip(d)}</div>`; }).join("") : `<div class="empty">${E("Xodimlardan xabar yo'q.")}</div>`;
+    const rw = all.rewards.slice().reverse().slice(0, 40);
+    $("#r-list", root).innerHTML = rw.length ? rw.map(r => `<div class="li"><span class="t">${dayLabel(r.date)}</span><span style="flex:1">${esc(t(ROLES[r.who]))} · ${r.kind === "bonus" ? E("Bonus") : E("Premiya")}${r.note ? ` · <span class="muted">${esc(r.note)}</span>` : ""}${r.fromKassa ? ` <span class="muted small">· ${E("kassa")}</span>` : ""}</span><b>${money(r.amount)}</b></div>`).join("") : `<div class="empty">${E("Hozircha yo'q.")}</div>`;
+  },
+};
+
+/* ---------- DEMO rejimi: namuna ma'lumotlar, brauzerda saqlanadi ---------- */
+const DEMO = !!window.TG_DEMO;
+async function makeDemoDb() {
+  const KEY = "tg_demo_v1"; let store = ls(KEY);
+  if (!store || !store["meta/settings"]) store = await demoSeed();
+  const subs = new Set();
+  const save = () => ls(KEY, store);
+  const fire = () => setTimeout(() => subs.forEach(f => f()), 0);
+  const snap = p => { const d = store[p]; return { id: p.split("/").pop(), exists: !!d, data: () => d && JSON.parse(JSON.stringify(d)), metadata: { fromCache: false, hasPendingWrites: false } }; };
+  save();
+  return {
+    doc: p => ({ get: async () => snap(p), set: async d => { store[p] = JSON.parse(JSON.stringify(d)); save(); fire(); }, onSnapshot(n) { const f = () => n(snap(p)); subs.add(f); setTimeout(f, 30); return () => subs.delete(f); } }),
+    collection: c => { const ws = []; const q = { where: (f, op, v) => { ws.push([f, op, v]); return q; }, onSnapshot(n) { const f = () => { const docs = Object.keys(store).filter(k => k.startsWith(c + "/") && k.split("/").length === 2 && ws.every(([fl, op, v]) => op === ">=" ? store[k][fl] >= v : true)).map(snap); n({ docs, size: docs.length, empty: !docs.length, metadata: { fromCache: false } }); }; subs.add(f); setTimeout(f, 30); return () => subs.delete(f); } }; return q; },
+    reset: () => { ls(KEY, null); location.reload(); },
+  };
+}
+async function demoSeed() {
+  let seed = 7; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; };
+  const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const st = {}; const users = {};
+  for (const r of Object.keys(ROLES)) users[r] = { role: r, name: r, salt: "demo", hash: await sha("demo:demo") };
+  st["meta/settings"] = { users, ...DEF, prices: { ...DEF.prices } };
+  st["meta/rates"] = { usdKgs: 87.46, usdUzs: 12021.8, updatedAt: Date.now(), source: "demo" };
+  const now = Date.now(); const days = daysBack(14);
+  let stock = 340, wood = 9;
+  days.forEach((d, di) => {
+    const isToday = di === days.length - 1;
+    const base = new Date(d + "T00:00").getTime(); const at = (h, m) => base + (h * 60 + m) * 60000;
+    const limit = isToday ? now : at(23, 59);
+    const L = r => (st[`log/${d}_${r}`] = st[`log/${d}_${r}`] || { date: d, role: r });
+    const P = (r, k, v) => { if (v.t <= limit) (L(r)[k] = L(r)[k] || []).push(v); };
+    const k = L("kassir"), o = L("oshpaz"), dr = L("direktor");
+    P("kassir", "checkins", { id: uid(), t: at(8, ri(40, 59)) });
+    if (di % 3 === 0) { P("oshpaz", "stockIn", { id: uid(), t: at(8, 20), qty: 600 }); P("direktor", "expenses", { id: uid(), t: at(8, 25), cat: "Tovuq xaridi", amount: 600 * 210, note: "600 ta muzlatilgan", fromKassa: false }); }
+    if (di % 4 === 1) { P("oshpaz", "woodIn", { id: uid(), t: at(8, 30), qty: 6, price: 0 }); P("direktor", "expenses", { id: uid(), t: at(8, 31), cat: "O'tin", amount: 6 * 900, note: "6 qop", fromKassa: true }); }
+    P("oshpaz", "woodUse", { id: uid(), t: at(21, 0), qty: 1.5 });
+    let cooked = 0; const batches = [];
+    for (let m = 9 * 60; m < 20 * 60; m += ri(70, 90)) {
+      const dur = ri(22, 28), tt = at(0, m), qty = 25, out = rnd() < 0.15 ? 24 : 25;
+      if (tt > limit) break;
+      const done = tt + dur * 60000 <= limit;
+      const b = { id: uid(), t: tt, qty, dur, doneAt: done ? tt + dur * 60000 + 60000 : null, outQty: done ? out : undefined };
+      if (!done) delete b.outQty;
+      P("oshpaz", "batches", b); batches.push(b); if (done) cooked += out;
+    }
+    let sold = 0; let tm = 9 * 60 + 40;
+    while (true) {
+      tm += ri(3, 9); const tt = at(0, tm); if (tt > limit || tm > 21 * 60 + 30) break;
+      const ready = sum(batches.filter(b => b.doneAt && b.doneAt <= tt), outQty);
+      if (sold >= ready - 1) continue;
+      const g = Math.min(ri(1, 3), ready - sold); if (g <= 0) continue;
+      const items = { grill: g, lavash: rnd() < .45 ? ri(1, 3) : 0, non: rnd() < .35 ? ri(1, 2) : 0, sous: rnd() < .5 ? ri(1, 2) : 0 };
+      const total = sum(ITEMS, ([kk]) => items[kk] * DEF.prices[kk]);
+      P("kassir", "sales", { id: uid(), t: tt, items, prices: { ...DEF.prices }, total }); sold += g;
+    }
+    const orders = [[12, 0, 8, "Ofis uchun"], [15, 30, 5, ""], [19, 0, 12, "To'y uchun"]];
+    orders.forEach(([h, m, q, n]) => { const id = uid(); P("kassir", "orders", { id, t: at(h - 2, m), qty: q, ready: `${pad(h)}:${pad(m)}`, note: n });
+      if (at(h - 1, m) <= limit) (o.orderStatus = o.orderStatus || {})[id] = { s: at(h, m - 5) <= limit ? "ready" : "acc", t: Math.min(limit, at(h, m - 5)) };
+      if (at(h, m + 5) <= limit) (k.orderStatus = k.orderStatus || {})[id] = { s: "given", t: at(h, m + 5) }; });
+    if (!isToday || now > at(21, 0)) { P("kassir", "wages", { id: uid(), t: at(21, 10), who: "kassir", amount: 500, status: di % 5 === 2 ? "later" : "taken", takenAt: at(21, 10) }); }
+    if (!isToday) { const rev = sum(k.sales || [], s => s.total); P("direktor", "pickups", { id: uid(), t: at(21, 40), amount: Math.round((rev - 500) / 100) * 100, note: "Kechki inkassatsiya" }); }
+    if (di === 10) { P("oshpaz", "messages", { id: "dm1", t: at(13, 0), type: "avans", text: "Uyga kerak", amount: 3000 }); (dr.decisions = dr.decisions || {}).dm1 = { s: "paidHand", t: at(14, 0), note: "Berdim" }; P("direktor", "rewards", { id: uid(), t: at(21, 50), who: "oshpaz", kind: "premiya", amount: 2000, note: "Haftada 1500 ta grill", fromKassa: false }); }
+    if (isToday) { P("kassir", "messages", { id: "dm2", t: at(10, 15), type: "msg", text: "Lavash tugab qolyapti, ertaga ko'proq olib keling", amount: 0 }); P("oshpaz", "messages", { id: "dm3", t: at(11, 5), type: "avans", text: "", amount: 2500 }); }
+    stock = stock + sum(o.stockIn || [], s => s.qty) - sum(batches, b => b.qty); wood = wood + sum(o.woodIn || [], w => w.qty) - sum(o.woodUse || [], w => w.qty);
+  });
+  st["meta/stock"] = { count: Math.max(0, stock), updatedAt: now };
+  st["meta/wood"] = { amount: Math.max(0, Math.round(wood * 10) / 10), updatedAt: now };
+  return st;
+}
+/* ---------- boot ---------- */
+document.documentElement.lang = LANG;
+renderLogin();
+if (S.session) renderShell();
+(async () => {
+  const timer = setTimeout(() => { if (!S.loaded.settings) { S.dbFail = !S.db; updLoginHint(); toast(t("Ma'lumotlar hali yuklanmadi. Internet aloqasini tekshiring."), "err"); } }, 10000);
+  const db = DEMO ? await makeDemoDb() : window.claude && await window.claude.use("db");
+  if (!db) { S.dbFail = true; clearTimeout(timer); updLoginHint(); if (S.session) toast(t("Ma'lumotlar bazasiga ulanib bo'lmadi. claude.ai hisobingizga kirganingizni tekshiring va sahifani qayta oching."), "err"); return; }
+  S.db = db;
+  db.doc("meta/settings").onSnapshot(s => {
+    S.settings = s.exists ? s.data() : null; if (!s.metadata.fromCache) { S.loaded.settings = true; clearTimeout(timer); }
+    if (S.session && S.settings && !(S.settings.users || {})[S.session.login]) { ls("tg_session", null); S.session = null; renderLogin(t("Sessiya tugadi, qayta kiring.")); return; }
+    refresh();
+  }, e => { console.error(e); S.dbFail = true; updLoginHint(); });
+  db.doc("meta/rates").onSnapshot(s => { S.rates = s.exists ? s.data() : null; refresh(); }, e => console.error(e));
+  db.doc("meta/stock").onSnapshot(s => { S.stock = s.exists ? s.data() : { count: 0 }; refresh(); }, e => console.error(e));
+  db.doc("meta/wood").onSnapshot(s => { S.wood = s.exists ? s.data() : { amount: 0 }; refresh(); }, e => console.error(e));
+  const since = dkey(new Date(Date.now() - 90 * DAY));
+  db.collection("log").where("date", ">=", since).onSnapshot(snap => {
+    const m = new Map(); snap.docs.forEach(d => m.set(d.id, d.data())); S.logs = m; S.loaded.logs = true; refresh();
+  }, e => { console.error(e); toast(t("Ma'lumotlarni o'qib bo'lmadi."), "err"); });
+  if (DEMO) return;
+  try {
+    S.mcp = await window.claude.use("mcp");
+    const user = await window.claude.use("user");
+    const owner = user ? ((await user.isOwner()) ?? false) : false;
+    if (S.mcp && owner) setTimeout(() => { if (!S.rates || Date.now() - (S.rates.updatedAt || 0) > 3600e3) refreshRates(false); }, 4000);
+    if (S.mcp && owner) setInterval(() => { if (S.rates && Date.now() - (S.rates.updatedAt || 0) > 3600e3) refreshRates(false); }, 600e3);
+  } catch (e) {}
+})();
+})();
+</script>
+
+</body>
+</html>
