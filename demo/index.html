@@ -453,7 +453,23 @@ function watchChanges() {
 }
 
 /* ---------- rates via connector (owner/admin) ---------- */
+async function webRates() {
+  const srcs = [
+    ["https://open.er-api.com/v6/latest/USD", j => [j.rates.KGS, j.rates.UZS], "open.er-api.com"],
+    ["https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json", j => [j.usd.kgs, j.usd.uzs], "currency-api"],
+    ["https://latest.currency-api.pages.dev/v1/currencies/usd.json", j => [j.usd.kgs, j.usd.uzs], "currency-api"]
+  ];
+  for (const [u, f, name] of srcs) {
+    try { const r = await fetch(u, { cache: "no-store" }); if (!r.ok) continue; const [k, z] = f(await r.json()).map(Number); if (k > 0 && z > 0) return { usdKgs: k, usdUzs: z, source: name }; } catch (e) { console.warn(e); }
+  }
+  throw new Error("no source");
+}
 async function refreshRates(manual) {
+  if (!S.mcp && FB) {
+    try { const w = await webRates(); S.rates = { usdKgs: w.usdKgs, usdUzs: w.usdUzs, updatedAt: Date.now(), source: w.source }; refresh(); await writeMeta("rates", S.rates); if (manual) toast(t("Kurs yangilandi")); }
+    catch (e) { console.warn(e); if (manual) toast(t("Kursni olib bo'lmadi. Qo'lda kiriting."), "err"); }
+    return;
+  }
   if (!S.mcp) { if (manual) toast(t("Avtomatik kurs bu qurilmada mavjud emas. Kursni qo'lda kiriting."), "err"); return; }
   try {
     const get = async sym => {
@@ -1332,8 +1348,10 @@ if (FB) {
         S.session = { login, role: login, name: login, at: Date.now() };
         seenOrders = seenReady = seenMsgs = seenDec = seenRew = seenLoss = null; S.tab = null;
         S.loaded.logs = false; startData(makeFbDb(fs)); renderShell();
+        setTimeout(() => { if (S.session && (!S.rates || !(S.rates.usdKgs > 10) || Date.now() - (S.rates.updatedAt || 0) > 3600e3)) refreshRates(false); }, 3000);
       } else { unsubs.splice(0).forEach(x => { try { x(); } catch (e) {} }); S.session = null; S.logs = new Map(); renderLogin(); }
     });
+    setInterval(() => { if (S.session && (!S.rates || Date.now() - (S.rates.updatedAt || 0) > 3600e3)) refreshRates(false); }, 600e3);
   } catch (e) { console.error(e); S.dbFail = true; updLoginHint(); }
 } else {
 renderLogin();
@@ -1353,7 +1371,7 @@ if (S.session) renderShell();
 })();
 }
 })();
-</script>
 
+</script>
 </body>
 </html>
