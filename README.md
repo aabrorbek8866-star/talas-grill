@@ -6,7 +6,7 @@ Qirg'iziston, Talas shahridagi grilxona uchun admin panel. 4 til (o'zbek, rus, i
 
 | Fayl | Nima |
 |---|---|
-| `index.html` | **Demo versiya.** Namuna ma'lumotlar bilan to'liq ishlaydi, ma'lumotlar faqat brauzerda saqlanadi. Hamma loginlar paroli: `demo`. Faylni brauzerda ochish kifoya. |
+| `index.html` | **Demo versiya.** Namuna ma'lumotlar bilan to'liq ishlaydi, ma'lumotlar faqat brauzerda saqlanadi. Login ro'yxatdan tanlanadi, parol qo'lda yoziladi (parolni egasidan so'rang). Faylni brauzerda ochish kifoya. |
 | `panel.html` | Ishchi panel kodi. U claude.ai Artifact sifatida ishlaydi va claude.ai ma'lumotlar bazasidan (`db` imkoniyati) foydalanadi, shuning uchun alohida serverda o'zi ishlamaydi. |
 
 ## Imkoniyatlar
